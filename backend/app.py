@@ -194,6 +194,15 @@ def get_attendance():
     month_id = data.get('month_id')
     
     logger.info(f"Attendance Request Data: session_year={session_year}, semester_id={semester_id}, year={year}, month_id={month_id}, roll_no={data.get('roll_no')}")
+    logger.info(f"Checking Session ID: {session_id}")
+    logger.info(f"Active Session IDs in memory: {list(sessions.keys())}")
+    
+    if not session_id or session_id not in sessions:
+        logger.error(f"Session {session_id} NOT FOUND in active sessions!")
+        return jsonify({"error": "Invalid or expired session"}), 400
+
+    session = sessions[session_id]
+    hidden_fields = getattr(session, 'hidden_fields', {})
     
     # Params from hidden fields
     payload = {
