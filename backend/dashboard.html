@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Dashboard</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link href="https://uktech.ac.in/favicon.ico" rel="shortcut icon" />
+    <link href="/ums/Content/ums/css/bootstrap.css" rel='stylesheet' />
+    <link href="/ums/Content/ums/css/jquery.smartmenus.bootstrap-4.css" rel="stylesheet" />
+    <link href="/ums/Content/ums/css/all.css" rel="stylesheet" />
+    <link href="/ums/Content/ums/css/dataTables.bootstrap5.min.css" rel='stylesheet' />
+    <link href="/ums/Content/ums/css/custom_theme.css" rel='stylesheet' />
+    <link href="/ums/Content/ums/css/colorTheme/themeColor3.css" rel='stylesheet' />
+    <link href="/ums/Content/ums/css/fontStyle/default-font.css" rel='stylesheet' />
+    <link href="/ums/Content/ums/css/background/bg-default.css" rel='stylesheet' />
+    <link href="/ums/Content/css/datepicker.css" rel='stylesheet' />
+    <link href='/ums/Content/ums/css/select2.min.css' rel='stylesheet' />
+    <link href="/ums/Content/ums/css/draggle.css" rel="stylesheet" />
+    <link href="/ums/Content/ums/css/responsive.css" rel='stylesheet' />
+    <link href="/ums/Content/ums/css/multiselect.css" rel="stylesheet" />
+    <link href="/ums/Content/css/sweetalert.min.css" rel="stylesheet" />
+    <link href="/ums/Content/ums/css/query-chat.css" rel="stylesheet" />
+
+    <script src="/ums/Content/js/jquery-min.js"></script>
+    <script type="text/javascript" src="/ums/Scripts/jquery.validate.js"></script>
+    <script type="text/javascript" src="/ums/Scripts/jquery.validate.unobtrusive.js"></script>
+
+</head>
+<body class="dashbg studentp">
+    <div class="contentwraper">
+        <header class="header">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col col-md-1 b-right">
+                        <img src="/ums/Content/ums/images/dash-logo.png" alt="" class="dash-logo" />
+                    </div>
+                    <div class="col col-md-11">
+                        <div class="row">
+                            <div class="col">
+                                <h4 class="moudlename">
+                                    University Management System
+                                    <span class="department-logo">Veer Madho Singh Bhandari Uttarakhand Technical University</span>
+                                </h4>
+                            </div>
+                            <div class="col-md-auto">
+
+                               
+                                <a href="#" class="profileicon">
+                                        <img src='https://online.uktech.ac.in/ums/Content/writereaddata/Admission/Application_31484/202309212055356956_PhotoPath_Photo.jpg'>
+
+                                </a>
+                                <div class="sidebar">
+                                    <div class="profiletitle">
+                                        YOGESH <span class="text-uppercase">Student</span> <span>Last Login : 01/12/2025 at 1:05PM </span>
+                                        <a href="#" class="profileicon text-dark tproficon">
+                                            <i class="fas fa-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                    <div class="scrollwrap">
+                                        <div class="nano-content">
+                                            <ul class="navsidebar">
+                                                <li class="nav-item">
+
+                                                    <a href="/ums/Student/User/StudentProfileDetail">
+                                                        <span class="icons icon-user"></span> Profile
+                                                    </a>
+                                                    
+
+                                                </li>
+
+                                                
+
+
+                                            </ul>
+                                        </div>
+                                    </div>
+                                   
+                                    <div class="logoutbutton">
+                                        <a href="/ums/Student/Account/Login">
+                                            <span class="fas fa-power-off"></span>&nbsp;&nbsp;Logout
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <nav class="navbar navbar-expand-lg mainmenu">
+                                <div class="container-fluid">
+                                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                                        <span class="navbar-toggler-icon icons icon-menu"></span>
+                                    </button>
+                                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/ums/Student/User/Dashboard">
+                                                    <span class="icons icon-speedometer"></span> Dashboard
+                                                </a>
+                                            </li>
+                                                    <li class="nav-item dropdown">
+                                                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <span class="icons icon-organization"></span> Master
+                                                        </a>
+                                                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                                            <li>
+                                                                <a class="dropdown-item" href="/ums/Student/Academic/ViewNotes">View Notes</a>
+                                                            </li>
+                                                        </ul>
+
+                                                    </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link" href="/ums/Student/User/StudentGrievanceReport">
+                                                                <span class="icons icon-envelope"></span> Grievance
+                                                            </a>
+                                                        </li>
+                                                    <li class="nav-item dropdown">
+                                                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <span class="icons icon-graph"></span> Transactions
+                                                        </a>
+                                                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+
+
+                                                            
+
+
+                                                                <li>
+                                                                    <a class="dropdown-item" href="/ums/Student/BackExam/BackPaperExam">Back Examination Form</a>
+                                                                </li>
+                                                                                                                            <li>
+                                                                    <a class="dropdown-item" href="/ums/Student/User/ShowExamFormDetail">Regular Examination Form</a>
+                                                                </li>
+                                                                                                                                                                                                                                                    <li> <a class="dropdown-item" href="/ums/Student/Registration/Promote?strStudentType=RG"> Registration Form</a></li>
+                                                                <li> <a class="dropdown-item" href="/ums/Student/Registration/GetStudentTypeDetailRegistrationFrom">Registration Form for Ex-Student/Re-Admission</a></li>
+
+                                                                <li> <a class="dropdown-item" href="/ums/Student/Registration/GenrateChallanPromotion"> Registration Online  Payment Fees </a></li>
+                                                                <li> <a class="dropdown-item" href="/ums/Student/BackExam/BackExampayment"> Back Exam Online  Payment Fees </a></li>
+                                                                                                                            <li> <a class="dropdown-item" href="/ums/Student/User/StudentBookletReEvaluation"> Showing Evaluated Answer Book & Re-Evaluation On Demand</a></li>
+                                                                <li> <a class="dropdown-item" href="/ums/Student/User/ReEvaluationmarksDetails"> Showing  Re-Evaluation Marks Details</a></li>
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/StudentFeedback">Student Feedback (Confidential)</a></li>
+
+                                                                <li>
+                                                                    <a class="dropdown-item" href="/ums/Student/User/DiscussionForumList">Discussion List</a>
+                                                                </li>
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/DownloadquestionPaper">Old Question Paper Download</a></li>
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/UploadTestAssTutorialQuestionPaper">Upload Answer Test/Assignment/Tutorial Question Paper</a></li>
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/ResultDisplay">Result</a></li>
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/DisplayProblemStatementToStudent">Intercollegiate  Contest</a></li>
+                                                            
+                                                            
+                                                        <li> <a href="#" class="dropdown-item" onclick="sendPostWithAjax('231620101072')">Scholar At A Glance</a> </li>
+
+                                                            
+
+                                                        </ul>
+                                                    </li>
+                                                    <li class="nav-item dropdown">
+                                                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                            <span class="icons icon-docs"></span> Report
+                                                        </a>
+                                                        <ul class="dropdown-menu megamenu" aria-labelledby="navbarDropdown">
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/StudentUploadCircular"> View Circular</a></li>
+
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/ViewAttendance"> View Attendance</a></li>
+
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/ExamQuestionPaper"> Test/Assignment/Tutorial Question Paper</a></li>
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/ModalQuestionPaper">Model Question Paper/Study Material</a></li>
+                                                            <li> <a class="dropdown-item" href="/ums/Student/User/StudentObservationStatusReport">Answerbook Observation Unsatisfied Report</a></li>
+
+                                                            
+                                                            
+                                                        </ul>
+                                                    </li>
+
+
+                                    </div>
+                                </div>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- InstanceBeginEditable name="Content Area" -->
+        
+
+
+
+
+<div class="container-fluid pagecontentbody">
+    <div class="tab-content">
+        <div class="pagebody removebg-color">
+            <div class="col-md-12 pageheader pb-2">
+                <div class="row">
+                    <div class="col-md-10">
+                        <h4 class="mb-0">Dashboard </h4>
+                    </div>
+                    <div class="col-md-2 text-end">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="mb-0" style="color:green">WELCOME :- YOGESH</h4></br>
+<h5 class="mb-0" style="color:green"> <span>College Name  :- DR. A.P.J ABDUL KALAM INSTITUTE OF TECHNOLOGY (A CAMPUS INSTITUTION OF UNIVERSITY), TANAKPUR [162]</span></h5>
+                    <h5 class="mb-0" style="color:green"> <span>Roll Number :- 231620101072</span></h5>
+                    <h5 class="mb-0" style="color:green"> <span>  Course Name:- B.TECH. (Computer Science &amp; Engineering )  </span></h5>
+                    <h5 class="mb-0" style="color:green"> <span>Year of Admission :- 2023</span></h5>
+                    <h5 class="mb-0" style="color:green"> <span>Year of Course Duration :- 4</span></h5>
+                    <h5 class="mb-0" style="color:green"> <span>Year of  Course Completion Duration :- 7</span></h5>
+                        <h5 class="mb-0" style="color:green"> <span>Year of Completion :-2 Year</span></h5>
+
+                
+                <!--<div class="card-body">
+    <div class="table-responsive">
+        <table class="table table-bordred table-hover bg-white">
+            <thead>
+                <tr>
+                    <th>S.No.</th>
+                    <th>Application No.</th>
+                    <th>Applicant Name</th>
+                    <th>Aadhar Number</th>
+                    <th>Sports Name</th>-->
+                <!--<th style="width:25%;">Remarks</th>
+    <th>Allotment Status</th>-->
+                <!--<th class="text-center">View</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>SG001</td>
+            <td>Avinash Verma</td>
+            <td>1234567891234</td>
+            <td>Cricket, Football</td>-->
+                <!--<td>You are selected intimation will be soon sent for the next trail</td>
+    <td><strong class="btn btn-success btn-xs disabled btn-block">Allotted</strong></td>-->
+                <!--<td class="text-center"><a class="btn btn-sm btn-dark" href="#"><i class="fa fa-eye"></i></a></td>
+    </tr>-->
+                <!--<tr>
+        <td>2</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>Not allotted due to low merit</td>
+        <td><strong class="btn btn-danger btn-xs disabled btn-block">Not Allotted</strong></td>
+        <td class="text-center"><a class="btn btn-sm btn-dark" href="ApplicationPreview.html"><i class="fa fa-eye"></i></a></td>
+    </tr>-->
+                <!--<tr>
+        <td>3</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td><strong class="btn btn-primary btn-xs disabled btn-block">Pending</strong></td>
+        <td class="text-center"><a class="btn btn-sm btn-dark" href="ApplicationPreview.html"><i class="fa fa-eye"></i></a></td>
+    </tr>-->
+                <!--</tbody>
+            </table>
+        </div>
+    </div>-->
+
+            </div>
+        </div>
+    </div>
+</div>
+        <!-- InstanceEndEditable -->
+        <div id="divLoader">
+            <img src="/ums/Content/ums/images/loadingImg.gif" alt="not showing" id="loading" />
+        </div>
+        <footer>
+            <div class="row">
+                <div class="col-md-9">
+                    <ul class="foot-list">
+                        <li>Copyright Veer Madho Singh Bhandari Uttarakhand Technical University, Dehradun</li>
+                    </ul>
+                </div>
+                <div class="col-md-3 text-right">
+                    <ul class="foot-list">
+                        <li>
+                            
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script type="text/javascript" src="/ums/Content/js/bootstrap.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/jquery.smartmenus.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/jquery.smartmenus.bootstrap-4.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/jquery.nanoscroller.min.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/dataTables.bootstrap5.min.js"></script>
+    <script type="text/javascript" src="/ums/Content/js/datepicker.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/datepicker.en.js"></script>
+    
+    <script type="text/javascript" src="/ums/Content/ums/js/beautifyhtml.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/dragble.js"></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/theme-script.js"></script>
+    <script type="text/javascript" src='/ums/Content/ums/js/select2.min.js'></script>
+    <script type="text/javascript" src="/ums/Content/ums/js/multiselect.js"></script>
+    <script type="text/javascript" src="/ums/Content/js/sweetalert.min.js"></script>
+    <script src="/ums/Content/Customjs/CommonJs.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            $(".filter-select").select2();
+            $(".filter-select-popup").select2({ dropdownParent: $('#create-college') });
+        });
+
+        function sendPostWithAjax(rollNo) {
+            // Open the tab immediately on user action
+            var newTab = window.open();
+
+            if (!newTab) {
+                alert("Popup blocked. Please allow popups for this site.");
+                return;
+            }
+
+            var obj = {
+                rollNo: rollNo,
+                IsCaptchaHide: 1
+            };
+
+            // Show loading message or spinner
+            newTab.document.write("<p>Loading...</p>");
+
+            $.ajax({
+                url: '/ums/Result/Result/ScholarAtAGlance',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(obj),
+                success: function (response) {
+                    newTab.document.open();
+                    newTab.document.write(response);
+                    newTab.document.close();
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX Error:', status, error);
+                    newTab.document.write("<p>An error occurred while loading the result.</p>");
+                    newTab.document.close();
+                }
+            });
+        }
+
+
+
+
+    </script>
+</body>
+</html>

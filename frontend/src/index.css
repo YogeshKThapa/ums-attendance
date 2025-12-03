@@ -1,0 +1,353 @@
+:root {
+  /* Light Theme Defaults */
+  --primary-color: #007bff;
+  --bg-color: #f4f4f9;
+  --text-color: #333;
+  --card-bg: #ffffff;
+  --card-border: #eee;
+  --input-bg: #ffffff;
+  --input-border: #ddd;
+  --secondary-text: #666;
+  --hover-bg: #f1f1f1;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --header-text: #007bff;
+  --danger-bg: #ffebee;
+  --danger-text: #c62828;
+  --success-bg: #e8f5e9;
+  --success-text: #2e7d32;
+  --table-header-bg: #f8f9fa;
+  --table-border: #eee;
+}
+
+[data-theme='dark'] {
+  /* Dark Theme Overrides */
+  --primary-color: #4dabf7;
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --card-bg: #1e1e1e;
+  --card-border: #333;
+  --input-bg: #2d2d2d;
+  --input-border: #444;
+  --secondary-text: #aaa;
+  --hover-bg: #333;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --header-text: #4dabf7;
+  --danger-bg: #3e2723;
+  --danger-text: #ff8a80;
+  --success-bg: #1b5e20;
+  --success-text: #a5d6a7;
+  --table-header-bg: #2d2d2d;
+  --table-border: #333;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  margin: 0;
+  color: var(--header-text);
+  text-align: center;
+}
+
+.theme-toggle {
+  position: absolute;
+  right: 0;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 5px;
+  border-radius: 50%;
+  transition: background 0.3s;
+}
+
+.theme-toggle:hover {
+  background: var(--hover-bg);
+}
+
+.login-container {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px var(--shadow-color);
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+  border: 1px solid var(--card-border);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.form-group input,
+select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+/* Fix for dropdown options in some browsers */
+select {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  -webkit-appearance: none;
+  /* Remove default arrow to ensure styling applies */
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right .7em top 50%;
+  background-size: .65em auto;
+  padding-right: 1.5em;
+  /* Make room for custom arrow */
+}
+
+select option {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+[data-theme='dark'] select {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.captcha-group .captcha-img {
+  display: block;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--input-border);
+  max-width: 100%;
+}
+
+.refresh-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  margin-left: 0.5rem;
+  color: var(--text-color);
+}
+
+button[type="submit"],
+.action-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+button[type="submit"]:hover,
+.action-btn:hover {
+  opacity: 0.9;
+}
+
+.error-message {
+  color: var(--danger-text);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.success-message {
+  color: var(--success-text);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* --- Dashboard Controls --- */
+.dashboard-controls {
+  margin: 20px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* Two columns by default */
+  gap: 10px;
+}
+
+.go-btn {
+  grid-column: span 2;
+  /* Full width button */
+  padding: 12px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.go-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.go-btn:active {
+  transform: translateY(0);
+}
+
+/* --- Profile Screen Styles --- */
+.profiles-grid {
+  display: grid;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.profile-card {
+  background: var(--bg-color);
+  padding: 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.profile-card:active {
+  transform: scale(0.98);
+}
+
+.profile-nickname {
+  font-weight: bold;
+  font-size: 18px;
+  color: var(--text-color);
+}
+
+.profile-name {
+  font-size: 12px;
+  color: var(--secondary-text);
+}
+
+.delete-btn {
+  padding: 8px 12px;
+  font-size: 14px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.add-profile-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--card-bg);
+  border: 2px dashed var(--input-border);
+  color: var(--secondary-text);
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.add-profile-btn:active {
+  background: var(--hover-bg);
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 600px) {
+  .app-container {
+    padding: 10px;
+  }
+
+  .login-container {
+    padding: 1.5rem;
+    box-shadow: none;
+    border: 1px solid var(--card-border);
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-controls {
+    grid-template-columns: 1fr;
+    /* Stack vertically on mobile */
+  }
+
+  .go-btn {
+    grid-column: span 1;
+  }
+}
+
+/* Attendance Table Styles */
+.attendance-wrapper {
+  margin-top: 20px;
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px var(--shadow-color);
+}
+
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  min-width: 600px;
+}
+
+.attendance-table th,
+.attendance-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--table-border);
+  color: var(--text-color);
+}
+
+.attendance-table th {
+  background-color: var(--table-header-bg);
+  font-weight: 600;
+  color: var(--text-color);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.attendance-table tr:last-child td {
+  border-bottom: none;
+}
+
+.attendance-table tr:hover {
+  background-color: var(--hover-bg);
+}

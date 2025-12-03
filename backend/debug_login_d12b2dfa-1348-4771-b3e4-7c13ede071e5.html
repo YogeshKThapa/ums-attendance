@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Login</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="shortcut icon" href="../images/favicon.png" />
+    <link href="/ums/Content/css/bootstrap.css" rel='stylesheet' />
+    <link href="/ums/Content/css/all.css" rel="stylesheet" />
+    <link href="/ums/Content/css/sweetalert.min.css" rel="stylesheet" />
+    <link href="/ums/Content/css/datepicker.css" rel="stylesheet" media="all" />
+    <link href="/ums/Content/css/custom_theme.css" rel='stylesheet' />
+    <link href="/ums/Content/css/responsive.css" rel='stylesheet' />
+
+    <script type="text/javascript" src="/ums/Content/js/jquery-min.js"></script>
+    <script type="text/javascript" src="/ums/Content/js/bootstrap.js"></script>
+    <script type="text/javascript" src="/ums/Content/js/aes.js"></script>
+    <script type="text/javascript" src="/ums/Content/js/sweetalert.min.js"></script>
+    <script type="text/javascript" src="/ums/Content/js/datepicker.js"></script>
+    <script type="text/javascript" src="/ums/Content/js/datepicker.en.js"></script>
+    <script type="text/javascript" src="/ums/Scripts/jquery.validate.js"></script>
+    <script type="text/javascript" src="/ums/Scripts/jquery.validate.unobtrusive.js"></script>
+    <script>
+        //$(document).ready(function () {
+        //    $("#concept-note").modal({
+        //        show: false,
+        //        backdrop: 'static'
+        //    });
+        //});
+        //$(window).on('load', function () {
+        //    $('#concept-note').modal('show');
+        //});
+        $(".toggle-password").click(function () { $(this).toggleClass("fa-eye fa-eye-slash"); var input = $($(this).attr("toggle")); if (input.attr("type") == "password") { input.attr("type", "text"); } else { input.attr("type", "password"); } });
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+
+            function disableBack() {
+                window.history.forward()
+            }
+            window.onload = disableBack();
+            window.onpageshow = function (e) {
+                if (e.persisted)
+                    disableBack();
+            }
+        });
+    </script>
+
+    <script type="text/javascript">
+        function preventBack() { window.history.forward(); }
+        setTimeout("preventBack()", 0);
+        window.onunload = function () { null };
+    </script>
+</head>
+<body>
+    <div class="container-fluid">
+        
+        <div class="row">
+            <div class="col-md-6 loginsidebar">
+                <div class="row justify-content-md-center">
+                    <div class="col col-lg-2 text-center"> <img src="/ums/Content/images/logo.png" class="img-fluid" /> </div>
+                    <div class="col-md-12 deptname">
+                        <h5>Veer Madho Singh Bhandari Uttarakhand Technical University, Dehradun</h5>
+                        
+                        <h3>STUDENT LOGIN</h3>
+                    </div>
+                </div>
+            </div>
+            
+
+
+<script>
+        $(document).ready(function () { 
+            swal(
+                'Invalid UserId/Password. Please Enter Valid login details.', '', "warning"
+            ).then(function () {
+            });
+        });
+</script>
+
+
+<div class="col">
+    <div class="p-4 p-lg-5 login-form">
+        <div class="text-center text-md-center mb-4 mt-md-0">
+            <h3 class="mb-0">Student Login</h3>
+            
+        </div>
+        
+<form action="/ums/Student/Account/Login" id="frmLogin" method="post">            <div class="form-group mb-3">
+                <label for="email">User ID</label>
+                <input Class="form-control" data-val="true" data-val-required="Required" id="LoginId" name="LoginId" type="text" value="ST0000030172" />
+                <span class="field-validation-valid" data-valmsg-for="LoginId" data-valmsg-replace="true"></span>
+            </div>
+            <div class="form-group">
+                <div class="form-group mb-3">
+                    <label for="password-field">Password</label>
+                    
+                    <input Class="form-control" data-val="true" data-val-required="Required" id="Password" name="Password" type="password" />
+                    <span toggle="#Password" class="fa fa-fw fa-eye field-icon toggle-password"></span>
+                    
+                    <span class="field-validation-valid" data-valmsg-for="Password" data-valmsg-replace="true"></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-md-5 col-5">
+                        <div class="captcha">
+                            <label class="btn-block">Captcha</label>
+                            <img src='/ums/Student/Master/GetCaptchaimage' id="imgCaptcha" style="border: solid 1px #ccc; width: 100%; height: 40px;" class="img-responsive captchimg" />
+                        </div>
+                    </div>
+                    <div class="col-md-1 col-1 refresh">
+                        <div class="cp_refresh">
+                            <a href="javascript:void()" onclick="javascript: RefreshCaptcha();" title="Refresh Captcha"><span class="fas fa-redo"></span></a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-6">
+                        <label>Enter Captcha</label>
+                        <input class="form-control" data-val="true" data-val-required="Required" id="Captcha" name="Captcha" type="text" value="5RPK4" />
+                        <span class="field-validation-valid" data-valmsg-for="Captcha" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-md-6 col-6">
+                        <div class="d-grid mb-3">
+                            <input id="hdnTest2" name="hdnTest2" type="hidden" value="9417973489443863" />
+                            <input type="submit" class="btn btn-info" id="btnLogin" value="Sign In" />
+                            
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-6">
+                        <div class="d-grid">
+                            <button class="btn btn-danger" type="reset">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="clearfix"></div>
+            <div class="d-flex justify-content-between align-items-top ">
+                <a href="/ums/Student/Account/ForgotPassword" class="small text-right">Forgot Password?</a>
+            </div>
+</form>        
+    </div>
+</div>
+<script>
+
+    $(document).ready(function () {
+        $('#Captcha').val('');
+    });
+
+    $(".toggle-password").click(function () {
+        $(this).toggleClass("fa-eye fa-eye-slash");
+        var input = $($(this).attr("toggle"));
+        if (input.attr("type") == "password") {
+            input.attr("type", "text");
+        } else {
+            input.attr("type", "password");
+        }
+    });
+
+    function RefreshCaptcha() {
+        var img = document.getElementById("imgCaptcha");
+        img.src = '/ums/Student/Master/GetCaptchaimage' + "?query=" + Math.random();
+    }
+
+    $('#btnLogin').click(function () {
+        debugger;
+
+        var seed = $("#hdnTest2").val();
+
+        //debugger;
+        //var username = $("#LoginId").val();
+        //var password = $("#Password").val();
+        //var capcha = $("#Captcha").val();
+        //if (username == "") {
+        //    swal("", "Provide Login Id", "information");
+        //    $("#LoginId").focus();
+        //    return false;
+        //}
+        //if (password.toUpperCase() == "C2ED18676D55983B777625D865440882" || password == "") {
+        //    swal("", "Provide Password", "information");
+        //    $("#Password").focus();
+        //    return false;
+        //}
+        //if (capcha == "") {
+        //    swal("", "Provide Captcha", "information");
+        //    $("#Captcha").focus();
+        //    return false;
+        //}
+
+        var val = $("#frmLogin").validate();
+        val.form();
+        val.showErrors();
+        if (val.valid()) {
+            $("#Password").val(encriptdataAES(seed, $("#Password").val()));
+            getClient();
+            return true;
+        }
+        else {
+            return false;
+        }
+    });
+    function encriptdataAES(keyReq, ValueToEnc) {
+
+        var key = CryptoJS.enc.Utf8.parse(keyReq);
+        var iv = CryptoJS.enc.Utf8.parse(keyReq);
+
+        var encryptedData = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(ValueToEnc), key,
+            {
+                keySize: 128 / 8,
+                iv: iv,
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            });
+
+        return encryptedData;
+    }
+
+    function getClient() {
+        // Connect to WMI
+        var locator = new ActiveXObject("WbemScripting.SWbemLocator");
+        var service = locator.ConnectServer(".");
+
+        // Get the info
+        var properties = service.ExecQuery("SELECT * FROM Win32_NetworkAdapterConfiguration");
+        var e = new Enumerator(properties);
+
+        var add = "";
+
+        for (; !e.atEnd(); e.moveNext()) {
+            var p = e.item();
+
+            if (p.MACAddress != null) {
+                add = add + p.MACAddress + "$";
+            }
+        }
+        $("#hdnClient").val(add);
+    }
+</script>
+
+
+
+        </div>
+    </div>
+    <footer>
+        <div class="row">
+            <div class="col-md-5">
+                <ul class="foot-list">
+                    <li>Copyright Veer Madho Singh Bhandari Uttarakhand Technical University,Dehradun</li>
+                </ul>
+            </div>
+            <div class="col-md-5">
+                <ul class="foot-list">
+                    <li><b>Technical Helpline :</b> Mobile:+91-9151988051, Email ID: helputuums@uktech.ac.in</li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <ul class="foot-list">
+                    <li></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+    <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Instructions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list">
+                        <li>Step 1: Enter your Company ID, User ID & Password. </li>
+                        <li>Step 2: Set up your Security Questions. </li>
+                        <li>Step 3: One Time Passcode Setup. </li>
+                        <li>Step 4: User Password Change. </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+</html>
