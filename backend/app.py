@@ -246,8 +246,13 @@ def get_attendance():
                         
                     s = BeautifulSoup(content, 'html.parser')
                     t = s.find('table')
-                    if not t: return
+                    if not t: 
+                        logger.warning(f"Month {m}: No table found in response.")
+                        return
                     
+                    rows = t.find_all('tr')
+                    logger.info(f"Month {m}: Found {len(rows)} rows.")
+
                     # Find column indices
                     headers = [th.text.strip().lower() for th in t.find_all('th')]
                     idx_held = -1
@@ -261,7 +266,7 @@ def get_attendance():
                     if idx_held == -1: idx_held = len(headers) - 3
                     if idx_attended == -1: idx_attended = len(headers) - 2
                     
-                    for tr in t.find_all('tr'):
+                    for tr in rows:
                         cells = [td.text.strip() for td in tr.find_all('td')]
                         if not cells or len(cells) < 3: continue
                         
@@ -293,7 +298,8 @@ def get_attendance():
                 a = counts['attended']
                 p = f"{(a/h*100):.2f}" if h > 0 else "0.00"
                 final_data.append([subj, str(h), str(a), p])
-                
+            
+            logger.info(f"Aggregated Data: Found {len(final_data)} subjects.")
             return jsonify({
                 "html": "", # No HTML for aggregated view
                 "attendance_data": final_data,
@@ -303,13 +309,10 @@ def get_attendance():
         else:
             # Single month fetch (existing logic)
             url = f"{BASE_URL}/ums/Student/Public/ShowStudentAttendanceListByRollNoDOB"
+            logger.info(f"Fetching single month {month_id} from {url}")
             resp = session.get(url, params=payload)
             resp.raise_for_status()
             
-            # Save for debugging
-            with open("attendance_debug.html", "w", encoding="utf-8") as f:
-                f.write(resp.text)
-    
             # Parse HTML to JSON
             try:
                 html_content = resp.json()
@@ -319,22 +322,32 @@ def get_attendance():
             soup = BeautifulSoup(html_content, 'html.parser')
             table = soup.find('table')
             attendance_data = []
+            headers = []
             
             if table:
+                logger.info("Table found in response.")
                 # Extract headers
                 headers = [th.text.strip() for th in table.find_all('th')]
                 
                 # Extract rows
-                for tr in table.find_all('tr'):
+                rows = table.find_all('tr')
+                logger.info(f"Found {len(rows)} rows in table.")
+                
+                for tr in rows:
                     cells = tr.find_all('td')
                     if cells:
                         row = [td.text.strip() for td in cells]
                         attendance_data.append(row)
+                logger.info(f"Extracted {len(attendance_data)} data rows.")
+            else:
+                logger.warning("NO TABLE FOUND in response!")
+                # Log a snippet of response to see what we got
+                logger.warning(f"Response snippet: {html_content[:500]}")
             
             return jsonify({
                 "html": resp.text,
                 "attendance_data": attendance_data,
-                "headers": headers if table else []
+                "headers": headers
             })
 
     except Exception as e:

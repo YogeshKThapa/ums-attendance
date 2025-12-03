@@ -106,6 +106,13 @@ const LoginForm = () => {
     // API Base URL (from environment variable or empty for local proxy)
     const API_BASE = import.meta.env.VITE_API_URL || '';
 
+    // DEBUG: Check if API_BASE is set
+    useEffect(() => {
+        if (!API_BASE && window.location.hostname !== 'localhost') {
+            alert("WARNING: VITE_API_URL is missing! The app will not work.");
+        }
+    }, []);
+
     const fetchCaptcha = async () => {
         setLoading(true);
         setError('');
