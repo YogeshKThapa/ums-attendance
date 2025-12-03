@@ -215,8 +215,11 @@ const LoginForm = () => {
         const rNo = loginId || stored.roll_no;
         const dOb = password || stored.dob;
 
+        console.log("Fetching attendance from:", `${API_BASE}/api/attendance`);
+        console.log("Session ID:", sessionId);
+
         try {
-            const res = await fetch('/api/attendance', {
+            const res = await fetch(`${API_BASE}/api/attendance`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
