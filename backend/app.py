@@ -20,6 +20,10 @@ BASE_URL = "https://online.uktech.ac.in"
 # New URL for public view
 LOGIN_URL = f"{BASE_URL}/ums/Student/Public/ViewDetail"
 
+@app.route('/', methods=['GET'])
+def health_check():
+    return "UMS Backend Running", 200
+
 @app.route('/api/init', methods=['GET'])
 def init_session():
     """
