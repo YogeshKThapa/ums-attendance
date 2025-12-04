@@ -354,5 +354,64 @@ def get_attendance():
         logger.error(f"Attendance fetch error: {e}")
         return jsonify({"error": str(e)}), 500
 
+# --- MongoDB / Leaderboard Setup ---
+import os
+from pymongo import MongoClient
+from datetime import datetime
+
+# Use env var for security, fallback to provided string for easy setup
+MONGO_URI = os.environ.get('MONGO_URI', "mongodb+srv://kumaryog2005:p6Vdbr2S3zFSUWWc@cluster0.wtlqmjg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+
+try:
+    client = MongoClient(MONGO_URI)
+    db = client.ums_db
+    users_collection = db.users
+    logger.info("Connected to MongoDB Atlas!")
+except Exception as e:
+    logger.error(f"Failed to connect to MongoDB: {e}")
+    users_collection = None
+
+@app.route('/api/leaderboard/join', methods=['POST'])
+def join_leaderboard():
+    if not users_collection:
+        return jsonify({"error": "Database not connected"}), 503
+        
+    data = request.json
+    roll_no = data.get('roll_no')
+    name = data.get('name')
+    percentage = data.get('percentage')
+    
+    if not all([roll_no, name, percentage]):
+        return jsonify({"error": "Missing data"}), 400
+        
+    try:
+        # Upsert user (Update if exists, Insert if new)
+        users_collection.update_one(
+            {"roll_no": roll_no},
+            {"$set": {
+                "name": name,
+                "percentage": float(percentage),
+                "last_updated": datetime.utcnow()
+            }},
+            upsert=True
+        )
+        return jsonify({"success": True, "message": "Joined leaderboard!"})
+    except Exception as e:
+        logger.error(f"Leaderboard join error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/leaderboard', methods=['GET'])
+def get_leaderboard():
+    if not users_collection:
+        return jsonify({"error": "Database not connected"}), 503
+        
+    try:
+        # Get top 50 users sorted by percentage (descending)
+        top_users = list(users_collection.find({}, {"_id": 0, "name": 1, "percentage": 1, "roll_no": 1}).sort("percentage", -1).limit(50))
+        return jsonify(top_users)
+    except Exception as e:
+        logger.error(f"Leaderboard fetch error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AttendanceSmartView from './AttendanceSmartView';
+import Leaderboard from './Leaderboard';
 
 const LoginForm = () => {
     // App State
@@ -105,13 +106,6 @@ const LoginForm = () => {
 
     // API Base URL (from environment variable or empty for local proxy)
     const API_BASE = import.meta.env.VITE_API_URL || '';
-
-    // DEBUG: Check if API_BASE is set
-    useEffect(() => {
-        if (!API_BASE && window.location.hostname !== 'localhost') {
-            alert("WARNING: VITE_API_URL is missing! The app will not work.");
-        }
-    }, []);
 
     const fetchCaptcha = async () => {
         setLoading(true);
@@ -344,93 +338,109 @@ const LoginForm = () => {
                             {loading ? 'Verifying...' : 'Login'}
                         </button>
                     </form>
-                )}
-            </div>
-        );
+                studentData={studentData}
+                overallPercentage={
+                    // Calculate overall percentage from attendanceData if available
+                    attendanceData.length > 0
+                        ? (() => {
+                            const totalHeld = attendanceData.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
+                            const totalAttended = attendanceData.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
+                            return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
+                        })()
+                        : "0.00"
+                }
+                onBack={() => setView('dashboard')}
+            />
+                );
     }
 
-    // DASHBOARD VIEW
-    if (view === 'dashboard' && studentData) {
+                // DASHBOARD VIEW
+                if (view === 'dashboard' && studentData) {
         return (
-            <div className="login-container" style={{ maxWidth: '800px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h2>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
-                    <button onClick={() => {
-                        localStorage.removeItem('ums_session');
-                        setView('profiles');
-                        setStudentData(null);
-                    }} style={{ background: '#f5f5f5', color: '#333', padding: '8px 12px', fontSize: '14px' }}>
-                        Logout
-                    </button>
-                </div>
-
-                <div className="dashboard-controls">
-                    <select value={selectedSessionYear} onChange={(e) => setSelectedSessionYear(e.target.value)}>
-                        <option value="">-- Session --</option>
-                        {sessionYears.map(opt => <option key={opt.Value} value={opt.Value}>{opt.Text}</option>)}
-                    </select>
-                    <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-                        <option value="">-- Year --</option>
-                        {years.map(opt => <option key={opt.Value} value={opt.Value}>{opt.Text}</option>)}
-                    </select>
-                    <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
-                        <option value="">-- Semester --</option>
-                        {semesters.map(sem => <option key={sem.Value} value={sem.Value}>{sem.Text}</option>)}
-                    </select>
-                    <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-                        <option value="0">Overall Semester</option>
-                        {Array.from({ length: 12 }, (_, i) => (
-                            <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
-                        ))}
-                    </select>
-                    <button onClick={handleGetAttendance} disabled={loading} className="go-btn">
-                        {loading ? '...' : 'Go'}
-                    </button>
-                </div>
-
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                        <div className="spinner" style={{
-                            width: '40px',
-                            height: '40px',
-                            border: '4px solid #f3f3f3',
-                            borderTop: '4px solid #007bff',
-                            borderRadius: '50%',
-                            animation: 'spin 1s linear infinite',
-                            margin: '0 auto 20px'
-                        }}></div>
-                        Fetching Attendance...
-                        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                    </div>
-                ) : studentData && attendanceData.length > 0 ? (
-                    <div className="attendance-wrapper">
-                        <div className="view-toggle" style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setViewMode(viewMode === 'smart' ? 'table' : 'smart')} style={{ background: 'none', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px' }}>
-                                {viewMode === 'smart' ? 'Show Table' : 'Show Smart View'}
+                <div className="login-container" style={{ maxWidth: '800px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h2>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button onClick={() => setView('leaderboard')} style={{ background: '#FFD700', color: '#000', padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                🏆 Rank
+                            </button>
+                            <button onClick={() => {
+                                localStorage.removeItem('ums_session');
+                                setView('profiles');
+                                setStudentData(null);
+                            }} style={{ background: '#f5f5f5', color: '#333', padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                                Logout
                             </button>
                         </div>
-                        {viewMode === 'smart' ? (
-                            <AttendanceSmartView
-                                data={attendanceData}
-                                headers={tableHeaders}
-                                overallData={overallData}
-                                isMonthly={selectedMonth !== '0'}
-                            />
-                        ) : (
-                            <table className="attendance-table">
-                                <thead><tr>{tableHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
-                                <tbody>{attendanceData.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody>
-                            </table>
-                        )}
                     </div>
-                ) : (
-                    <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>Select filters and click Go</div>
-                )}
-            </div>
-        );
+
+                    <div className="dashboard-controls">
+                        <select value={selectedSessionYear} onChange={(e) => setSelectedSessionYear(e.target.value)}>
+                            <option value="">-- Session --</option>
+                            {sessionYears.map(opt => <option key={opt.Value} value={opt.Value}>{opt.Text}</option>)}
+                        </select>
+                        <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+                            <option value="">-- Year --</option>
+                            {years.map(opt => <option key={opt.Value} value={opt.Value}>{opt.Text}</option>)}
+                        </select>
+                        <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
+                            <option value="">-- Semester --</option>
+                            {semesters.map(sem => <option key={sem.Value} value={sem.Value}>{sem.Text}</option>)}
+                        </select>
+                        <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+                            <option value="0">Overall Semester</option>
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
+                            ))}
+                        </select>
+                        <button onClick={handleGetAttendance} disabled={loading} className="go-btn">
+                            {loading ? '...' : 'Go'}
+                        </button>
+                    </div>
+
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                            <div className="spinner" style={{
+                                width: '40px',
+                                height: '40px',
+                                border: '4px solid #f3f3f3',
+                                borderTop: '4px solid #007bff',
+                                borderRadius: '50%',
+                                animation: 'spin 1s linear infinite',
+                                margin: '0 auto 20px'
+                            }}></div>
+                            Fetching Attendance...
+                            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                        </div>
+                    ) : studentData && attendanceData.length > 0 ? (
+                        <div className="attendance-wrapper">
+                            <div className="view-toggle" style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button onClick={() => setViewMode(viewMode === 'smart' ? 'table' : 'smart')} style={{ background: 'none', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px' }}>
+                                    {viewMode === 'smart' ? 'Show Table' : 'Show Smart View'}
+                                </button>
+                            </div>
+                            {viewMode === 'smart' ? (
+                                <AttendanceSmartView
+                                    data={attendanceData}
+                                    headers={tableHeaders}
+                                    overallData={overallData}
+                                    isMonthly={selectedMonth !== '0'}
+                                />
+                            ) : (
+                                <table className="attendance-table">
+                                    <thead><tr>{tableHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+                                    <tbody>{attendanceData.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody>
+                                </table>
+                            )}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>Select filters and click Go</div>
+                    )}
+                </div>
+                );
     }
 
-    return null;
+                return null;
 };
 
-export default LoginForm;
+                export default LoginForm;
