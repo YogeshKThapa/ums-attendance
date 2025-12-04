@@ -237,6 +237,23 @@ const LoginForm = () => {
             if (data.attendance_data) {
                 setAttendanceData(data.attendance_data);
                 setTableHeaders(data.headers || []);
+
+                // --- AUTOMATIC LEADERBOARD UPDATE ---
+                // Calculate percentage immediately
+                const totalHeld = data.attendance_data.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
+                const totalAttended = data.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
+                const percentage = totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
+
+                // Send to backend silently
+                fetch(`${API_BASE}/api/leaderboard/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        roll_no: rNo,
+                        name: studentData.student_name,
+                        percentage: percentage
+                    })
+                }).catch(err => console.error("Leaderboard update failed", err));
             }
             if (data.attendance_data && selectedMonth === '0') {
                 setOverallData(data); // Cache overall data for smart view

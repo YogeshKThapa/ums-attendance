@@ -65,14 +65,9 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                     <span>My Score:</span>
                     <strong>{overallPercentage}%</strong>
                 </div>
-                <button
-                    className="join-btn"
-                    onClick={handleJoin}
-                    disabled={joining}
-                >
-                    {joining ? 'Updating...' : '🚀 Update My Rank'}
-                </button>
-                <p className="privacy-note">Clicking this shares your Name & % publicly.</p>
+                <p className="privacy-note" style={{ marginTop: '10px', color: '#666' }}>
+                    ✨ Your rank updates automatically when you check attendance.
+                </p>
             </div>
 
             {/* Rankings List */}
