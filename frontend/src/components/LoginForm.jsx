@@ -447,4 +447,3 @@ return null;
 };
 
 export default LoginForm;
-```
