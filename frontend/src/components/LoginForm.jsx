@@ -456,6 +456,7 @@ const LoginForm = () => {
     // --- RENDER ---
 
     // --- RENDER ---
+    console.log("Render LoginForm | View:", view, "| StudentData:", studentData ? "Present" : "Missing");
 
     if (view === 'profiles') {
         return (
