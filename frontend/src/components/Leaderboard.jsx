@@ -14,13 +14,19 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
     const fetchLeaderboard = async () => {
         try {
             const res = await fetch(`${API_BASE}/api/leaderboard`);
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Server Error: ${res.status} ${res.statusText} - ${text.substring(0, 50)}...`);
+            }
             const data = await res.json();
             if (Array.isArray(data)) {
                 setLeaders(data);
+            } else {
+                throw new Error("Invalid data format received");
             }
         } catch (err) {
             console.error("Failed to fetch leaderboard", err);
-            setError("Failed to load rankings.");
+            setError(err.message || "Failed to load rankings.");
         } finally {
             setLoading(false);
         }
