@@ -370,7 +370,11 @@ try:
     logger.info(f"Attempting MongoDB connection to: ...@{masked_uri}")
     
     # Explicitly set tlsCAFile to avoid SSL errors on Render/Linux
-    client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    # Also force tls=True to ensure we are using SSL
+    ca_path = certifi.where()
+    logger.info(f"Using CA Certificate at: {ca_path}")
+    
+    client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path)
     
     # Force a connection check
     client.admin.command('ping')
@@ -381,6 +385,30 @@ try:
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {e}")
     users_collection = None
+
+@app.route('/api/debug/mongo', methods=['GET'])
+def debug_mongo():
+    """
+    Debug endpoint to test MongoDB connection and return detailed errors.
+    """
+    try:
+        # Re-attempt connection to get fresh error
+        ca_path = certifi.where()
+        client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
+        info = client.server_info() # Forces a call
+        return jsonify({
+            "status": "Connected",
+            "version": info.get("version"),
+            "ca_path": ca_path,
+            "uri_masked": MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "HIDDEN"
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "Failed",
+            "error": str(e),
+            "type": str(type(e)),
+            "ca_path": certifi.where()
+        }), 500
 
 @app.route('/api/leaderboard/join', methods=['POST'])
 def join_leaderboard():
