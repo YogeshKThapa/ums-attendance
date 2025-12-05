@@ -369,22 +369,36 @@ try:
     masked_uri = MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "Invalid URI Format"
     logger.info(f"Attempting MongoDB connection to: ...@{masked_uri}")
     
-    # Explicitly set tlsCAFile to avoid SSL errors on Render/Linux
-    # Also force tls=True to ensure we are using SSL
-    ca_path = certifi.where()
-    logger.info(f"Using CA Certificate at: {ca_path}")
-    
-    client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path)
-    
-    # Force a connection check
-    client.admin.command('ping')
-    
-    db = client.ums_db
-    users_collection = db.users
-    logger.info("Connected to MongoDB Atlas successfully!")
-except Exception as e:
-    logger.error(f"Failed to connect to MongoDB: {e}")
-    users_collection = None
+# Global client variable
+mongo_client = None
+users_collection = None
+
+def get_mongo_client():
+    global mongo_client, users_collection
+    if mongo_client:
+        return mongo_client
+        
+    try:
+        # Log which source we are using (masking password)
+        masked_uri = MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "Invalid URI Format"
+        logger.info(f"Attempting MongoDB connection to: ...@{masked_uri}")
+        
+        ca_path = certifi.where()
+        client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
+        
+        # Verify connection (non-blocking for app startup if we catch it here)
+        client.admin.command('ping')
+        
+        mongo_client = client
+        users_collection = client.ums_db.users
+        logger.info("Connected to MongoDB Atlas successfully!")
+        return mongo_client
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        return None
+
+# Initialize on startup (optional, but don't crash)
+get_mongo_client()
 
 @app.route('/api/debug/mongo', methods=['GET'])
 def debug_mongo():
@@ -393,25 +407,32 @@ def debug_mongo():
     """
     try:
         # Re-attempt connection to get fresh error
-        ca_path = certifi.where()
-        client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
-        info = client.server_info() # Forces a call
+        client = get_mongo_client()
+        if not client:
+             # Try one more time with fresh client to capture error
+             ca_path = certifi.where()
+             client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
+             client.admin.command('ping')
+             
+        info = client.server_info()
         return jsonify({
             "status": "Connected",
             "version": info.get("version"),
-            "ca_path": ca_path,
             "uri_masked": MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "HIDDEN"
         })
     except Exception as e:
         return jsonify({
             "status": "Failed",
             "error": str(e),
-            "type": str(type(e)),
-            "ca_path": certifi.where()
+            "type": str(type(e))
         }), 500
 
 @app.route('/api/leaderboard/join', methods=['POST'])
 def join_leaderboard():
+    # Ensure connection
+    if not users_collection:
+        get_mongo_client()
+        
     if not users_collection:
         return jsonify({"error": "Database not connected"}), 503
         
@@ -441,6 +462,10 @@ def join_leaderboard():
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
+    # Ensure connection
+    if not users_collection:
+        get_mongo_client()
+
     if not users_collection:
         return jsonify({"error": "Database not connected"}), 503
         
