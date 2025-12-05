@@ -359,14 +359,25 @@ import os
 from pymongo import MongoClient
 from datetime import datetime
 
+import certifi
+
 # Use env var for security, fallback to provided string for easy setup
 MONGO_URI = os.environ.get('MONGO_URI', "mongodb+srv://kumaryog2005:p6Vdbr2S3zFSUWWc@cluster0.wtlqmjg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
 try:
-    client = MongoClient(MONGO_URI)
+    # Log which source we are using (masking password)
+    masked_uri = MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "Invalid URI Format"
+    logger.info(f"Attempting MongoDB connection to: ...@{masked_uri}")
+    
+    # Explicitly set tlsCAFile to avoid SSL errors on Render/Linux
+    client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    
+    # Force a connection check
+    client.admin.command('ping')
+    
     db = client.ums_db
     users_collection = db.users
-    logger.info("Connected to MongoDB Atlas!")
+    logger.info("Connected to MongoDB Atlas successfully!")
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {e}")
     users_collection = None
