@@ -73,6 +73,24 @@ const LoginForm = () => {
 
     const handleProfileSelect = (profile) => {
         setActiveProfile(profile);
+
+        // Check if this profile has an active cached session
+        const storedSession = localStorage.getItem('ums_session');
+        if (storedSession) {
+            try {
+                const parsed = JSON.parse(storedSession);
+                // "Fast Re-entry" Logic: If stored session matches this profile (Roll No), skip login
+                if (parsed.roll_no === profile.rollNo && parsed.studentData) {
+                    restoreSession(parsed);
+                    setView('dashboard');
+                    return; // SKIP CAPTCHA
+                }
+            } catch (e) {
+                console.error("Session parse error", e);
+            }
+        }
+
+        // Fallback: Normal Login
         setLoginId(profile.rollNo);
         setPassword(profile.dob);
         setCaptchaText('');
