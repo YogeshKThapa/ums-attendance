@@ -110,12 +110,27 @@ header h1 {
 }
 
 @media (max-width: 600px) {
+  header {
+    margin-bottom: 1rem;
+    /* Reduce header spacing */
+  }
+
   .login-container {
     max-width: 100% !important;
-    /* Force full width on mobile */
     border-radius: 0;
     border: none;
-    padding: 1rem;
+    padding: 0.5rem;
+    /* Drastically reduce padding */
+  }
+
+  .form-group {
+    margin-bottom: 0.75rem;
+    /* Tighter form spacing */
+  }
+
+  .profiles-grid {
+    gap: 10px;
+    /* Tighter profile grid */
   }
 }
 

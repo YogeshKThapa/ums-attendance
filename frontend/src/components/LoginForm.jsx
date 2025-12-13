@@ -346,7 +346,7 @@ const LoginForm = () => {
                 <button onClick={() => setView('profiles')} style={{ background: 'none', border: 'none', color: '#666', marginBottom: '10px', cursor: 'pointer' }}>
                     ← Back to Profiles
                 </button>
-                <h2>{activeProfile ? `Login as ${activeProfile.nickname}` : 'New Login'} <span style={{ fontSize: '10px', color: '#ccc' }}>v1.1</span></h2>
+                <h2>{activeProfile ? `Login as ${activeProfile.nickname}` : 'New Login'}</h2>
                 {error && <div className="error-message">{error}</div>}
 
                 {loading && !captchaImage ? (
