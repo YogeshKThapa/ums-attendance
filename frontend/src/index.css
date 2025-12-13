@@ -313,26 +313,70 @@ button[type="submit"]:hover,
 }
 
 /* Attendance Table Styles */
+/* Attendance Table Styles */
 .attendance-wrapper {
   margin-top: 20px;
   overflow-x: auto;
   border-radius: 8px;
   box-shadow: 0 4px 6px var(--shadow-color);
+  width: 100%;
+  max-width: 100vw;
+  /* Ensure it doesn't overflow screen width */
+  position: relative;
 }
 
 .attendance-table {
-  width: 100%;
-  border-collapse: collapse;
+  width: max-content;
+  /* Let table grow as needed based on content */
+  min-width: 100%;
+  border-collapse: separate;
+  /* Required for sticky to work well with borders */
+  border-spacing: 0;
   background: var(--card-bg);
-  min-width: 600px;
 }
 
+/* Sticky First Column (Subject) */
+.attendance-table th:first-child,
+.attendance-table td:first-child {
+  position: sticky;
+  left: 0;
+  background-color: var(--card-bg);
+  /* Match bg to hide content behind */
+  z-index: 2;
+  /* Sit on top of other cells */
+  border-right: 2px solid var(--border-color, #eee);
+  /* Visual separator */
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.attendance-table th:first-child {
+  background-color: var(--table-header-bg);
+  /* Match header bg */
+  z-index: 3;
+  /* Header sticky needs higher z-index */
+}
+
+/* Specific styling for scrollable dates */
 .attendance-table th,
 .attendance-table td {
   padding: 12px 15px;
-  text-align: left;
+  text-align: center;
+  /* Center dates */
   border-bottom: 1px solid var(--table-border);
   color: var(--text-color);
+  white-space: nowrap;
+  /* Prevent wrapping for cleaner cells */
+}
+
+/* Revert text alignment for Subject column */
+.attendance-table td:first-child,
+.attendance-table th:first-child {
+  text-align: left;
+  min-width: 150px;
+  /* Ensure Subject name has space */
+  max-width: 200px;
+  white-space: normal;
+  /* Allow subject name to wrap if needed */
 }
 
 .attendance-table th {
@@ -349,15 +393,8 @@ button[type="submit"]:hover,
 
   .attendance-table th,
   .attendance-table td {
-    padding: 8px 10px;
-    /* Reduce padding */
-    font-size: 0.85rem;
-    /* Smaller font */
-  }
-
-  .attendance-table {
-    min-width: 100%;
-    /* Allow full width */
+    padding: 10px 8px;
+    font-size: 0.8rem;
   }
 }
 
