@@ -365,6 +365,32 @@ import certifi
 MONGO_URI = os.environ.get('MONGO_URI', "mongodb+srv://kumaryog2005:p6Vdbr2S3zFSUWWc@cluster0.wtlqmjg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
 # Global client variable
+mongo_client = None
+users_collection = None
+
+def get_mongo_client():
+    global mongo_client, users_collection
+    if mongo_client:
+        return mongo_client
+        
+    try:
+        # Log which source we are using (masking password)
+        masked_uri = MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "Invalid URI Format"
+        logger.info(f"Attempting MongoDB connection to: ...@{masked_uri}")
+        
+        ca_path = certifi.where()
+        client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
+        
+        # Verify connection (non-blocking for app startup if we catch it here)
+        client.admin.command('ping')
+        
+        mongo_client = client
+        users_collection = client.ums_db.users
+        logger.info("Connected to MongoDB Atlas successfully!")
+        return mongo_client
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        return None
 
 @app.route('/api/debug/mongo', methods=['GET'])
 def debug_mongo():
