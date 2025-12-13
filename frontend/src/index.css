@@ -344,6 +344,23 @@ button[type="submit"]:hover,
   letter-spacing: 0.5px;
 }
 
+/* Mobile Table Optimizations */
+@media (max-width: 600px) {
+
+  .attendance-table th,
+  .attendance-table td {
+    padding: 8px 10px;
+    /* Reduce padding */
+    font-size: 0.85rem;
+    /* Smaller font */
+  }
+
+  .attendance-table {
+    min-width: 100%;
+    /* Allow full width */
+  }
+}
+
 .attendance-table tr:last-child td {
   border-bottom: none;
 }

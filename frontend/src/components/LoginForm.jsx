@@ -429,9 +429,9 @@ const LoginForm = () => {
                 </div>
 
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', color: '#666' }}>
                         <div className="spinner"></div>
-                        Fetching Attendance...
+                        <span style={{ marginTop: '10px', fontWeight: '500' }}>Fetching Attendance...</span>
                     </div>
                 ) : studentData && attendanceData.length > 0 ? (
                     <div className="attendance-wrapper">
