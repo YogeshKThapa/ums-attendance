@@ -434,26 +434,28 @@ const LoginForm = () => {
                         <span style={{ marginTop: '10px', fontWeight: '500' }}>Fetching Attendance...</span>
                     </div>
                 ) : studentData && attendanceData.length > 0 ? (
-                    <div className="attendance-wrapper">
+                    <>
                         <div className="view-toggle" style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
                             <button onClick={() => setViewMode(viewMode === 'smart' ? 'table' : 'smart')} style={{ background: 'none', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px' }}>
                                 {viewMode === 'smart' ? 'Show Table' : 'Show Smart View'}
                             </button>
                         </div>
-                        {viewMode === 'smart' ? (
-                            <AttendanceSmartView
-                                data={attendanceData}
-                                headers={tableHeaders}
-                                overallData={overallData}
-                                isMonthly={selectedMonth !== '0'}
-                            />
-                        ) : (
-                            <table className="attendance-table">
-                                <thead><tr>{tableHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
-                                <tbody>{attendanceData.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody>
-                            </table>
-                        )}
-                    </div>
+                        <div className="attendance-wrapper">
+                            {viewMode === 'smart' ? (
+                                <AttendanceSmartView
+                                    data={attendanceData}
+                                    headers={tableHeaders}
+                                    overallData={overallData}
+                                    isMonthly={selectedMonth !== '0'}
+                                />
+                            ) : (
+                                <table className="attendance-table">
+                                    <thead><tr>{tableHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+                                    <tbody>{attendanceData.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody>
+                                </table>
+                            )}
+                        </div>
+                    </>
                 ) : (
                     <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>Select filters and click Go</div>
                 )}
