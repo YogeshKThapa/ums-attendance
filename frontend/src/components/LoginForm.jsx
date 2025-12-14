@@ -34,60 +34,86 @@ const LoginForm = () => {
     const [selectedYear, setSelectedYear] = useState('');
     const [viewMode, setViewMode] = useState('smart');
 
-    // Load Profiles on Mount
+    // Load Profiles and Cache on Mount
     useEffect(() => {
         const savedProfiles = JSON.parse(localStorage.getItem('ums_profiles') || '[]');
         setProfiles(savedProfiles);
 
-        // Check for active session
-        const storedSession = localStorage.getItem('ums_session');
-        if (storedSession) {
+        // Migration: Convert old 'ums_session' to new 'ums_cache' if it exists
+        const oldSession = localStorage.getItem('ums_session');
+        if (oldSession) {
             try {
-                const parsed = JSON.parse(storedSession);
-                // Check if session has the new dropdown data. If not, force re-login.
-                if (parsed.studentData && parsed.sessionYears && parsed.sessionYears.length > 0) {
-                    restoreSession(parsed);
-                    setView('dashboard');
-                } else {
-                    // Stale session, clear it
-                    console.log("Stale session detected, clearing...");
-                    localStorage.removeItem('ums_session');
+                const parsed = JSON.parse(oldSession);
+                if (parsed.roll_no) {
+                    const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
+                    cache[parsed.roll_no] = parsed;
+                    localStorage.setItem('ums_cache', JSON.stringify(cache));
+                    console.log("Migrated old session to ums_cache for", parsed.roll_no);
                 }
+                localStorage.removeItem('ums_session');
             } catch (e) {
                 localStorage.removeItem('ums_session');
             }
         }
     }, []);
 
-    const restoreSession = (parsed) => {
-        setSessionId(parsed.sessionId);
-        setStudentData(parsed.studentData);
-        setSessionYears(parsed.sessionYears || []);
-        setYears(parsed.years || []);
-        if (parsed.semesters) setSemesters(parsed.semesters);
+    const loadFromCache = (rollNo) => {
+        const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
+        return cache[rollNo];
+    };
 
-        // Restore defaults
-        if (parsed.sessionYears?.length > 0) setSelectedSessionYear(parsed.sessionYears[0].Value);
-        if (parsed.years?.length > 0) setSelectedYear(parsed.years[0].Value);
+    const saveToCache = (rollNo, data) => {
+        const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
+        // Merge with existing data to preserve what we have
+        cache[rollNo] = { ...(cache[rollNo] || {}), ...data };
+        localStorage.setItem('ums_cache', JSON.stringify(cache));
+    };
+
+    // Restore state from a cached session object
+    const restoreSession = (cachedData) => {
+        setSessionId(cachedData.sessionId);
+        setStudentData(cachedData.studentData);
+        setSessionYears(cachedData.sessionYears || []);
+        setYears(cachedData.years || []);
+        if (cachedData.semesters) setSemesters(cachedData.semesters);
+
+        // Restore Attendance Data if available
+        if (cachedData.attendanceData) {
+            setAttendanceData(cachedData.attendanceData);
+            setTableHeaders(cachedData.headers || []);
+            setOverallData(cachedData.overallData || null);
+        }
+
+        // Restore Defaults
+        if (cachedData.sessionYears?.length > 0) setSelectedSessionYear(cachedData.sessionYears[0].Value);
+        if (cachedData.years?.length > 0) setSelectedYear(cachedData.years[0].Value);
+
+        // Also restore selected semester if saved, else default to first
+        if (cachedData.semesters?.length > 0) {
+            // Try to restore last used semester, or default to first
+            setSelectedSemester(cachedData.semesters[0].Value);
+        }
     };
 
     const handleProfileSelect = (profile) => {
         setActiveProfile(profile);
 
-        // Check if this profile has an active cached session
-        const storedSession = localStorage.getItem('ums_session');
-        if (storedSession) {
-            try {
-                const parsed = JSON.parse(storedSession);
-                // "Fast Re-entry" Logic: If stored session matches this profile (Roll No), skip login
-                if (parsed.roll_no === profile.rollNo && parsed.studentData) {
-                    restoreSession(parsed);
-                    setView('dashboard');
-                    return; // SKIP CAPTCHA
-                }
-            } catch (e) {
-                console.error("Session parse error", e);
-            }
+        // FAST RE-ENTRY LOGIC
+        // Check if we have cached data for this user
+        const cached = loadFromCache(profile.rollNo);
+
+        if (cached && cached.studentData) {
+            console.log("Found cached data for", profile.rollNo);
+            // We have data! Load it immediately.
+            restoreSession(cached);
+
+            // We still set credentials for potential re-login if needed
+            setLoginId(profile.rollNo);
+            setPassword(profile.dob);
+
+            // Directly go to dashboard
+            setView('dashboard');
+            return;
         }
 
         // Fallback: Normal Login
@@ -110,13 +136,20 @@ const LoginForm = () => {
     };
 
 
-
     const deleteProfile = (e, index) => {
         e.stopPropagation();
         if (window.confirm("Delete this profile?")) {
+            const profileToDelete = profiles[index];
             const updated = profiles.filter((_, i) => i !== index);
             setProfiles(updated);
             localStorage.setItem('ums_profiles', JSON.stringify(updated));
+
+            // Also cleanup cache
+            if (profileToDelete) {
+                const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
+                delete cache[profileToDelete.rollNo];
+                localStorage.setItem('ums_cache', JSON.stringify(cache));
+            }
         }
     };
 
@@ -187,16 +220,17 @@ const LoginForm = () => {
                 if (data.session_years?.length > 0) setSelectedSessionYear(data.session_years[0].Value);
                 if (data.years?.length > 0) setSelectedYear(data.years[0].Value);
 
-                localStorage.setItem('ums_session', JSON.stringify({
+                // Update Cache
+                saveToCache(loginId, {
                     sessionId: sessionId,
                     studentData: data.student_data,
                     sessionYears: data.session_years,
                     years: data.years,
-                    roll_no: loginId,
+                    roll_no: loginId, // Redundant but safe
                     dob: password
-                }));
+                });
 
-                fetchSemesters(sessionId);
+                fetchSemesters(sessionId, loginId); // Pass loginId to save semesters to cache
                 setView('dashboard');
             } else {
                 setError(data.message || 'Login failed');
@@ -210,14 +244,14 @@ const LoginForm = () => {
         }
     };
 
-    const fetchSemesters = async (sid) => {
+    const fetchSemesters = async (sid, rNo) => {
         try {
             const res = await fetch(`${API_BASE}/api/semesters?session_id=${sid}`);
             const data = await res.json();
             if (Array.isArray(data)) {
                 setSemesters(data);
-                const stored = JSON.parse(localStorage.getItem('ums_session') || '{}');
-                localStorage.setItem('ums_session', JSON.stringify({ ...stored, semesters: data }));
+                // Update Cache with semesters
+                saveToCache(rNo, { semesters: data });
             }
         } catch (err) {
             console.error("Failed to fetch semesters", err);
@@ -230,19 +264,21 @@ const LoginForm = () => {
             return;
         }
         setLoading(true);
-        const stored = JSON.parse(localStorage.getItem('ums_session') || '{}');
-        const rNo = loginId || stored.roll_no;
-        const dOb = password || stored.dob;
 
-        console.log("Fetching attendance from:", `${API_BASE}/api/attendance`);
-        console.log("Session ID:", sessionId);
+        // Use current loginId or fallback to what's in studentData if we loaded from cache
+        const rNo = loginId || studentData?.rollNo;
+        const dOb = password; // Warning: if loaded from cache, password might be empty state. 
+        // Current flow sets password/loginId in handleProfileSelect even on cache hit, 
+        // so this matches.
+
+        console.log("Fetching attendance...");
 
         try {
             const res = await fetch(`${API_BASE}/api/attendance`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    session_id: sessionId,
+                    session_id: sessionId, // This might be expired on server, need to handle that
                     semester_id: selectedSemester,
                     roll_no: rNo,
                     dob: dOb,
@@ -251,10 +287,41 @@ const LoginForm = () => {
                     session_year: selectedSessionYear
                 })
             });
+
+            if (res.status === 400 || res.status === 401) {
+                // Session expired or invalid
+                const errorData = await res.json();
+
+                // If we are just viewing cached data, maybe we shouldn't force logout immediately?
+                // But the user clicked "Go", so they want fresh data.
+                // We should guide them to re-login.
+
+                if (window.confirm("Your session has expired. Re-login to refresh data?")) {
+                    setView('login');
+                    fetchCaptcha();
+                    setCaptchaText('');
+                }
+                setLoading(false);
+                return;
+            }
+
             const data = await res.json();
             if (data.attendance_data) {
                 setAttendanceData(data.attendance_data);
                 setTableHeaders(data.headers || []);
+
+                // Cache this attendance result!
+                const updatePayload = {
+                    attendanceData: data.attendance_data,
+                    headers: data.headers
+                };
+
+                if (selectedMonth === '0') {
+                    setOverallData(data); // Cache overall data for smart view
+                    updatePayload.overallData = data;
+                }
+
+                saveToCache(rNo, updatePayload);
 
                 // --- AUTOMATIC LEADERBOARD UPDATE ---
                 // Calculate percentage immediately
@@ -273,9 +340,6 @@ const LoginForm = () => {
                     })
                 }).catch(err => console.error("Leaderboard update failed", err));
             }
-            if (data.attendance_data && selectedMonth === '0') {
-                setOverallData(data); // Cache overall data for smart view
-            }
             if (data.html) setAttendanceHtml(data.html);
         } catch (err) {
             setError(err.message);
@@ -286,15 +350,11 @@ const LoginForm = () => {
 
     // Trigger overall fetch when semester is selected
     useEffect(() => {
-        if (sessionId && selectedSemester && selectedSessionYear && selectedYear) {
-            // Logic to fetch overall stats silently could go here
-        }
+        // Logic to fetch overall stats silently could go here
     }, [sessionId, selectedSemester, selectedSessionYear, selectedYear]);
 
 
 
-
-    // --- RENDER ---
 
     // --- RENDER ---
     console.log("Render LoginForm | View:", view, "| StudentData:", studentData ? "Present" : "Missing");
@@ -413,11 +473,12 @@ const LoginForm = () => {
                             🏆 Rank
                         </button>
                         <button onClick={() => {
-                            localStorage.removeItem('ums_session');
+                            // Logout Logic: Go back to profiles, clear current view state, but DO NOT delete cache unless requested
+                            // Actually, standard logout just exits the view.
                             setView('profiles');
                             setStudentData(null);
                         }} style={{ background: '#f5f5f5', color: '#333', padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-                            Logout
+                            Back
                         </button>
                     </div>
                 </div>
