@@ -27,6 +27,7 @@ const LoginForm = () => {
     const [attendanceData, setAttendanceData] = useState([]);
     const [tableHeaders, setTableHeaders] = useState([]);
     const [overallData, setOverallData] = useState(null);
+    const [lastUpdated, setLastUpdated] = useState(null); // New State for timestamp
 
     const [sessionYears, setSessionYears] = useState([]);
     const [years, setYears] = useState([]);
@@ -39,43 +40,67 @@ const LoginForm = () => {
         const savedProfiles = JSON.parse(localStorage.getItem('ums_profiles') || '[]');
         setProfiles(savedProfiles);
 
-        // Migration: Convert old 'ums_session' to new 'ums_cache' if it exists
-        const oldSession = localStorage.getItem('ums_session');
-        if (oldSession) {
+        // MIGRATION: Convert old 'ums_cache' (monolithic) to new 'ums_data_ROLLNO' (split)
+        const oldCacheBlob = localStorage.getItem('ums_cache');
+        if (oldCacheBlob) {
             try {
-                const parsed = JSON.parse(oldSession);
-                if (parsed.roll_no) {
-                    const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
-                    cache[parsed.roll_no] = parsed;
-                    localStorage.setItem('ums_cache', JSON.stringify(cache));
-                    console.log("Migrated old session to ums_cache for", parsed.roll_no);
-                }
-                localStorage.removeItem('ums_session');
+                const parsed = JSON.parse(oldCacheBlob);
+                Object.keys(parsed).forEach(rollNo => {
+                    // Save individual items if they don't exist
+                    if (!localStorage.getItem(`ums_data_${rollNo}`)) {
+                        localStorage.setItem(`ums_data_${rollNo}`, JSON.stringify({
+                            ...parsed[rollNo],
+                            timestamp: Date.now() // Estimate timestamp for migrated data
+                        }));
+                    }
+                });
+                console.log("Migrated ums_cache to split keys.");
+                localStorage.removeItem('ums_cache');
             } catch (e) {
-                localStorage.removeItem('ums_session');
+                console.error("Migration failed", e);
             }
         }
+        
+        // MIGRATION: Old session cleanup
+        localStorage.removeItem('ums_session');
     }, []);
 
     const loadFromCache = (rollNo) => {
-        const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
-        return cache[rollNo];
+        try {
+            return JSON.parse(localStorage.getItem(`ums_data_${rollNo}`));
+        } catch (e) {
+            return null;
+        }
     };
 
     const saveToCache = (rollNo, data) => {
-        const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
-        // Merge with existing data to preserve what we have
-        cache[rollNo] = { ...(cache[rollNo] || {}), ...data };
-        localStorage.setItem('ums_cache', JSON.stringify(cache));
+        const currentData = loadFromCache(rollNo) || {};
+        const newData = { 
+            ...currentData, 
+            ...data,
+            timestamp: Date.now() 
+        };
+        localStorage.setItem(`ums_data_${rollNo}`, JSON.stringify(newData));
     };
 
     // Restore state from a cached session object
     const restoreSession = (cachedData) => {
-        setSessionId(cachedData.sessionId);
+        // Basic Data
         setStudentData(cachedData.studentData);
         setSessionYears(cachedData.sessionYears || []);
         setYears(cachedData.years || []);
         if (cachedData.semesters) setSemesters(cachedData.semesters);
+        if (cachedData.timestamp) setLastUpdated(cachedData.timestamp);
+
+        // Session ID Handling with Staleness Check
+        // If data is older than 60 mins (3600000 ms), don't trust the session ID
+        const isStale = (Date.now() - (cachedData.timestamp || 0)) > 3600000;
+        if (!isStale) {
+             setSessionId(cachedData.sessionId);
+        } else {
+             setSessionId(''); // Force new session generation on next action
+             console.log("Cached session ID expired/stale. Cleared.");
+        }
 
         // Restore Attendance Data if available
         if (cachedData.attendanceData) {
@@ -146,9 +171,7 @@ const LoginForm = () => {
 
             // Also cleanup cache
             if (profileToDelete) {
-                const cache = JSON.parse(localStorage.getItem('ums_cache') || '{}');
-                delete cache[profileToDelete.rollNo];
-                localStorage.setItem('ums_cache', JSON.stringify(cache));
+                localStorage.removeItem(`ums_data_${profileToDelete.rollNo}`);
             }
         }
     };
@@ -467,7 +490,14 @@ const LoginForm = () => {
         return (
             <div className="login-container" style={{ maxWidth: '800px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h2>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
+                    <div>
+                        <h2 style={{margin: 0}}>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
+                        {lastUpdated && (
+                            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                                Data from: {new Date(lastUpdated).toLocaleTimeString()} ({Math.floor((Date.now() - lastUpdated) / 60000)}m ago)
+                            </div>
+                        )}
+                    </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button onClick={() => setView('leaderboard')} style={{ background: '#FFD700', color: '#000', padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
                             🏆 Rank
