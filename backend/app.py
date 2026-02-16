@@ -194,7 +194,7 @@ def get_attendance():
     # Required params from frontend
     session_year = data.get('session_year', '2025') # Default to current
     semester_id = data.get('semester_id')
-    year = data.get('year', '2025')
+    year = data.get('year', '2026')
     month_id = data.get('month_id')
     
     logger.info(f"Attendance Request Data: session_year={session_year}, semester_id={semester_id}, year={year}, month_id={month_id}, roll_no={data.get('roll_no')}")

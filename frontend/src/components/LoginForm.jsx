@@ -60,7 +60,7 @@ const LoginForm = () => {
                 console.error("Migration failed", e);
             }
         }
-        
+
         // MIGRATION: Old session cleanup
         localStorage.removeItem('ums_session');
     }, []);
@@ -75,10 +75,10 @@ const LoginForm = () => {
 
     const saveToCache = (rollNo, data) => {
         const currentData = loadFromCache(rollNo) || {};
-        const newData = { 
-            ...currentData, 
+        const newData = {
+            ...currentData,
             ...data,
-            timestamp: Date.now() 
+            timestamp: Date.now()
         };
         localStorage.setItem(`ums_data_${rollNo}`, JSON.stringify(newData));
     };
@@ -96,10 +96,10 @@ const LoginForm = () => {
         // If data is older than 60 mins (3600000 ms), don't trust the session ID
         const isStale = (Date.now() - (cachedData.timestamp || 0)) > 3600000;
         if (!isStale) {
-             setSessionId(cachedData.sessionId);
+            setSessionId(cachedData.sessionId);
         } else {
-             setSessionId(''); // Force new session generation on next action
-             console.log("Cached session ID expired/stale. Cleared.");
+            setSessionId(''); // Force new session generation on next action
+            console.log("Cached session ID expired/stale. Cleared.");
         }
 
         // Restore Attendance Data if available
@@ -275,6 +275,16 @@ const LoginForm = () => {
                 setSemesters(data);
                 // Update Cache with semesters
                 saveToCache(rNo, { semesters: data });
+
+                // Auto-select the semester with Value '73' (requested hardcoded default), else last one
+                if (data.length > 0) {
+                    const defaultSem = data.find(s => s.Value == '73');
+                    if (defaultSem) {
+                        setSelectedSemester('73');
+                    } else {
+                        setSelectedSemester(data[data.length - 1].Value);
+                    }
+                }
             }
         } catch (err) {
             console.error("Failed to fetch semesters", err);
@@ -352,16 +362,18 @@ const LoginForm = () => {
                 const totalAttended = data.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
                 const percentage = totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
 
-                // Send to backend silently
-                fetch(`${API_BASE}/api/leaderboard/join`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        roll_no: rNo,
-                        name: studentData.student_name,
-                        percentage: percentage
-                    })
-                }).catch(err => console.error("Leaderboard update failed", err));
+                if (localStorage.getItem(`leaderboard_optin_${rNo}`) === 'true') {
+                    // Send to backend silently ONLY if opted in
+                    fetch(`${API_BASE}/api/leaderboard/join`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            roll_no: rNo,
+                            name: studentData.student_name,
+                            percentage: percentage
+                        })
+                    }).catch(err => console.error("Leaderboard update failed", err));
+                }
             }
             if (data.html) setAttendanceHtml(data.html);
         } catch (err) {
@@ -491,7 +503,7 @@ const LoginForm = () => {
             <div className="login-container" style={{ maxWidth: '800px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
-                        <h2 style={{margin: 0}}>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
+                        <h2 style={{ margin: 0 }}>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
                         {lastUpdated && (
                             <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
                                 Data from: {new Date(lastUpdated).toLocaleTimeString()} ({Math.floor((Date.now() - lastUpdated) / 60000)}m ago)

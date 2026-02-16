@@ -7,11 +7,22 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
     const [error, setError] = useState('');
     const API_BASE = import.meta.env.VITE_API_URL || '';
 
+    const [optedIn, setOptedIn] = useState(false);
+
     useEffect(() => {
-        fetchLeaderboard();
-    }, []);
+        const rollNo = studentData.roll_no || studentData.RollNo;
+        const hasOptedIn = localStorage.getItem(`leaderboard_optin_${rollNo}`) === 'true';
+        setOptedIn(hasOptedIn);
+
+        if (hasOptedIn) {
+            fetchLeaderboard();
+        } else {
+            setLoading(false);
+        }
+    }, [studentData]);
 
     const fetchLeaderboard = async () => {
+        setLoading(true);
         try {
             const res = await fetch(`${API_BASE}/api/leaderboard`);
             if (!res.ok) {
@@ -36,17 +47,20 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
         if (!studentData || !overallPercentage) return;
         setJoining(true);
         try {
+            const rollNo = studentData.roll_no || studentData.RollNo;
             const res = await fetch(`${API_BASE}/api/leaderboard/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    roll_no: studentData.roll_no || studentData.RollNo, // Handle case sensitivity
+                    roll_no: rollNo, // Handle case sensitivity
                     name: studentData.student_name || studentData.StudentName,
                     percentage: overallPercentage
                 })
             });
             const data = await res.json();
             if (data.success) {
+                localStorage.setItem(`leaderboard_optin_${rollNo}`, 'true');
+                setOptedIn(true);
                 fetchLeaderboard(); // Refresh list
             } else {
                 alert("Failed to join: " + data.error);
@@ -65,43 +79,76 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                 <h2>🏆 Leaderboard</h2>
             </div>
 
-            {/* Join Card */}
-            <div className="join-card">
-                <div className="my-score">
-                    <span>My Score:</span>
-                    <strong>{overallPercentage}%</strong>
-                </div>
-                <p className="privacy-note" style={{ marginTop: '10px', color: '#666' }}>
-                    ✨ Your rank updates automatically when you check attendance.
-                </p>
-            </div>
-
             {/* Rankings List */}
-            {loading ? (
-                <div className="loading-spinner">Loading rankings...</div>
-            ) : error ? (
-                <div className="error-msg">{error}</div>
-            ) : (
-                <div className="rank-list">
-                    {leaders.map((user, index) => (
-                        <div
-                            key={index}
-                            className={`rank-item ${user.roll_no === (studentData.roll_no || studentData.RollNo) ? 'highlight' : ''}`}
-                        >
-                            <div className="rank-num">#{index + 1}</div>
-                            <div className="rank-info">
-                                <div className="rank-name">{user.name}</div>
-                                <div className="rank-bar-bg">
-                                    <div
-                                        className="rank-bar-fill"
-                                        style={{ width: `${Math.min(user.percentage, 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="rank-score">{user.percentage}%</div>
-                        </div>
-                    ))}
+            {!optedIn ? (
+                <div className="opt-in-view" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '20px' }}>🏆</div>
+                    <h3>Join the Leaderboard?</h3>
+                    <p style={{ color: '#666', marginBottom: '30px' }}>
+                        See how your attendance compares with others! <br />
+                        <b>Privacy Note:</b> Your name and attendance % will be visible to other students.
+                    </p>
+                    <button
+                        onClick={handleJoin}
+                        disabled={joining}
+                        style={{
+                            background: '#4caf50',
+                            color: 'white',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '25px',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            opacity: joining ? 0.7 : 1
+                        }}
+                    >
+                        {joining ? 'Joining...' : 'Yes, Join Leaderboard'}
+                    </button>
+                    <p style={{ fontSize: '12px', color: '#999', marginTop: '20px' }}>
+                        You can opt-out at any time (simulated).
+                    </p>
                 </div>
+            ) : (
+                <>
+                    {/* Join Card (Now Status Card) */}
+                    <div className="join-card">
+                        <div className="my-score">
+                            <span>My Score:</span>
+                            <strong>{overallPercentage}%</strong>
+                        </div>
+                        <p className="privacy-note" style={{ marginTop: '10px', color: '#666' }}>
+                            ✨ You are on the leaderboard. Your rank updates automatically.
+                        </p>
+                    </div>
+
+                    {loading ? (
+                        <div className="loading-spinner">Loading rankings...</div>
+                    ) : error ? (
+                        <div className="error-msg">{error}</div>
+                    ) : (
+                        <div className="rank-list">
+                            {leaders.map((user, index) => (
+                                <div
+                                    key={index}
+                                    className={`rank-item ${user.roll_no === (studentData.roll_no || studentData.RollNo) ? 'highlight' : ''}`}
+                                >
+                                    <div className="rank-num">#{index + 1}</div>
+                                    <div className="rank-info">
+                                        <div className="rank-name">{user.name}</div>
+                                        <div className="rank-bar-bg">
+                                            <div
+                                                className="rank-bar-fill"
+                                                style={{ width: `${Math.min(user.percentage, 100)}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                    <div className="rank-score">{user.percentage}%</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
