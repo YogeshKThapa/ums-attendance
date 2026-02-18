@@ -17,6 +17,15 @@ const LoginForm = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [dbStatus, setDbStatus] = useState(null);
+
+    useEffect(() => {
+        // Check DB connection on mount
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/debug/mongo`)
+            .then(res => res.json())
+            .then(data => setDbStatus(data))
+            .catch(err => setDbStatus({ status: 'Error', error: err.message }));
+    }, []);
 
     // Dashboard State
     const [studentData, setStudentData] = useState(null);
@@ -473,6 +482,18 @@ const LoginForm = () => {
                         </button>
                     </form >
                 )}
+                {/* ... existing form ... */}
+                <div style={{ marginTop: '20px', fontSize: '12px', color: '#888', textAlign: 'center' }}>
+                    {dbStatus && (
+                        <span>
+                            DB Status:
+                            <span style={{ color: dbStatus.status === 'Connected' ? 'green' : 'red', fontWeight: 'bold', marginLeft: '5px' }}>
+                                {dbStatus.status}
+                            </span>
+                            {dbStatus.error && <div style={{ color: 'red', fontSize: '10px' }}>{dbStatus.error}</div>}
+                        </span>
+                    )}
+                </div>
             </div >
         );
     }
