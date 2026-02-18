@@ -381,7 +381,7 @@ def get_mongo_client():
         ca_path = certifi.where()
         client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
         
-        # Verify connection (non-blocking for app startup if we catch it here)
+        # Verify connection (blocking for 5s timeout)
         client.admin.command('ping')
         
         mongo_client = client
@@ -410,7 +410,7 @@ def debug_mongo():
         return jsonify({
             "status": "Connected",
             "version": info.get("version"),
-            "uri_masked": MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "HIDDEN"
+            "uri": MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "HIDDEN"
         })
     except Exception as e:
         return jsonify({
@@ -421,22 +421,25 @@ def debug_mongo():
 
 @app.route('/api/leaderboard/join', methods=['POST'])
 def join_leaderboard():
-    # Ensure connection
-    if not users_collection:
-        get_mongo_client()
-        
-    if not users_collection:
-        return jsonify({"error": "Database not connected"}), 503
-        
-    data = request.json
-    roll_no = data.get('roll_no')
-    name = data.get('name')
-    percentage = data.get('percentage')
-    
-    if not all([roll_no, name, percentage]):
-        return jsonify({"error": "Missing data"}), 400
-        
     try:
+        # Ensure connection
+        if not users_collection:
+            get_mongo_client()
+            
+        if not users_collection:
+            return jsonify({"error": "Database not connected. Check server logs."}), 503
+            
+        data = request.json
+        if not data:
+             return jsonify({"error": "Invalid JSON body"}), 400
+
+        roll_no = data.get('roll_no')
+        name = data.get('name')
+        percentage = data.get('percentage')
+        
+        if not all([roll_no, name, percentage]):
+            return jsonify({"error": "Missing required data fields"}), 400
+            
         # Upsert user (Update if exists, Insert if new)
         users_collection.update_one(
             {"roll_no": roll_no},
@@ -448,9 +451,10 @@ def join_leaderboard():
             upsert=True
         )
         return jsonify({"success": True, "message": "Joined leaderboard!"})
+
     except Exception as e:
-        logger.error(f"Leaderboard join error: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Leaderboard join CRITICAL error: {e}", exc_info=True)
+        return jsonify({"error": f"Internal Error: {str(e)}"}), 500
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
