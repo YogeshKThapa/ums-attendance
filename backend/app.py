@@ -423,10 +423,10 @@ def debug_mongo():
 def join_leaderboard():
     try:
         # Ensure connection
-        if not users_collection:
+        if users_collection is None:
             get_mongo_client()
             
-        if not users_collection:
+        if users_collection is None:
             return jsonify({"error": "Database not connected. Check server logs."}), 503
             
         data = request.json
@@ -459,11 +459,11 @@ def join_leaderboard():
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     # Ensure connection
-    if not users_collection:
+    if users_collection is None:
         get_mongo_client()
-
-    if not users_collection:
-        return jsonify({"error": "Database not connected"}), 503
+        
+    if users_collection is None:
+        return jsonify({"error": "Database not connected. Check server logs."}), 503
         
     try:
         # Get top 50 users sorted by percentage (descending)
