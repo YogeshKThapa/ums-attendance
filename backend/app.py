@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend
+CORS(app, resources={r"/api/*": {"origins": "*"}})  # Explicitly enable CORS for API routes
 
 # Store active sessions in memory
 sessions = {}

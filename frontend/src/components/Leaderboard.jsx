@@ -48,25 +48,34 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
         setJoining(true);
         try {
             const rollNo = studentData.roll_no || studentData.RollNo;
+            console.log(`Joining Leaderboard at: ${API_BASE}/api/leaderboard/join`); // Debug URL
+
             const res = await fetch(`${API_BASE}/api/leaderboard/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    roll_no: rollNo, // Handle case sensitivity
+                    roll_no: rollNo,
                     name: studentData.student_name || studentData.StudentName,
                     percentage: overallPercentage
                 })
             });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Server Error: ${res.status} ${res.statusText} - ${text.substring(0, 100)}`);
+            }
+
             const data = await res.json();
             if (data.success) {
                 localStorage.setItem(`leaderboard_optin_${rollNo}`, 'true');
                 setOptedIn(true);
                 fetchLeaderboard(); // Refresh list
             } else {
-                alert("Failed to join: " + data.error);
+                alert("Failed to join: " + (data.error || "Unknown error"));
             }
         } catch (err) {
-            alert("Network error");
+            console.error("Leaderboard Join Error:", err);
+            alert(`Error joining: ${err.message}`);
         } finally {
             setJoining(false);
         }
