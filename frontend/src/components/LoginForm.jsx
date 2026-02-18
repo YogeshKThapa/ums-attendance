@@ -407,42 +407,27 @@ const LoginForm = () => {
         return (
             <div className="login-container">
                 <h2>Select Profile</h2>
-                <div className="profiles-grid" style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
+                <div className="profiles-grid">
                     {profiles.map((p, idx) => (
-                        <div key={idx} onClick={() => handleProfileSelect(p)} style={{
-                            background: '#f8f9fa',
-                            padding: '15px',
-                            borderRadius: '12px',
-                            cursor: 'pointer',
-                            border: '1px solid #eee',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                        }}>
+                        <div key={idx} onClick={() => handleProfileSelect(p)} className="profile-card">
                             <div>
-                                <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{p.nickname}</div>
-                                <div style={{ fontSize: '12px', color: '#666' }}>{p.name}</div>
+                                <div className="profile-nickname">{p.nickname}</div>
+                                <div className="profile-name">{p.name}</div>
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <button onClick={(e) => deleteProfile(e, idx)} style={{ padding: '5px 10px', fontSize: '12px', background: '#ffebee', color: '#c62828' }}>🗑️</button>
+                                <button onClick={(e) => deleteProfile(e, idx)} className="delete-btn">🗑️</button>
                             </div>
                         </div>
                     ))}
 
-                    <button onClick={handleAddProfile} style={{
-                        padding: '15px',
-                        background: 'white',
-                        border: '2px dashed #ccc',
-                        color: '#666',
-                        borderRadius: '12px',
-                        fontWeight: 'bold'
-                    }}>
+                    <button onClick={handleAddProfile} className="add-profile-btn">
                         + Add New Profile
                     </button>
                 </div>
             </div>
         );
     }
+
 
     if (view === 'login') {
         return (

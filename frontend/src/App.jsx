@@ -3,7 +3,14 @@ import LoginForm from './components/LoginForm'
 import './App.css'
 
 function App() {
-    const [theme, setTheme] = React.useState(localStorage.getItem('ums_theme') || 'light');
+    const [theme, setTheme] = React.useState(() => {
+        const saved = localStorage.getItem('ums_theme');
+        if (saved) return saved;
+
+        // Auto Dark Mode after 10 PM (22:00)
+        const hour = new Date().getHours();
+        return (hour >= 22 || hour < 6) ? 'dark' : 'light';
+    });
 
     React.useEffect(() => {
         document.body.setAttribute('data-theme', theme);
