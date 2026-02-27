@@ -354,81 +354,33 @@ def get_attendance():
         logger.error(f"Attendance fetch error: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- MongoDB / Leaderboard Setup ---
+# --- Flat File (JSON) Leaderboard Setup ---
 import os
-from pymongo import MongoClient
+import json
 from datetime import datetime
 
-import certifi
+LEADERBOARD_FILE = os.path.join(os.path.dirname(__file__), 'leaderboard.json')
 
-# Use env var for security, fallback to provided string for easy setup
-MONGO_URI = os.environ.get('MONGO_URI', "mongodb+srv://kumaryog2005:p6Vdbr2S3zFSUWWc@cluster0.wtlqmjg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-
-# Global client variable
-mongo_client = None
-users_collection = None
-
-def get_mongo_client():
-    global mongo_client, users_collection
-    if mongo_client:
-        return mongo_client
-        
+def load_leaderboard():
+    if not os.path.exists(LEADERBOARD_FILE):
+        return {}
     try:
-        # Log which source we are using (masking password)
-        masked_uri = MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "Invalid URI Format"
-        logger.info(f"Attempting MongoDB connection to: ...@{masked_uri}")
-        
-        ca_path = certifi.where()
-        client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
-        
-        # Verify connection (blocking for 5s timeout)
-        client.admin.command('ping')
-        
-        mongo_client = client
-        users_collection = client.ums_db.users
-        logger.info("Connected to MongoDB Atlas successfully!")
-        return mongo_client
+        with open(LEADERBOARD_FILE, 'r') as f:
+            return json.load(f)
     except Exception as e:
-        logger.error(f"Failed to connect to MongoDB: {e}")
-        return None
+        logger.error(f"Error loading leaderboard: {e}")
+        return {}
 
-@app.route('/api/debug/mongo', methods=['GET'])
-def debug_mongo():
-    """
-    Debug endpoint to test MongoDB connection and return detailed errors.
-    """
+def save_leaderboard(data):
     try:
-        # Re-attempt connection to get fresh error
-        client = get_mongo_client()
-        if not client:
-             # Try one more time with fresh client to capture error
-             ca_path = certifi.where()
-             client = MongoClient(MONGO_URI, tls=True, tlsCAFile=ca_path, serverSelectionTimeoutMS=5000)
-             client.admin.command('ping')
-             
-        info = client.server_info()
-        return jsonify({
-            "status": "Connected",
-            "version": info.get("version"),
-            "uri": MONGO_URI.split('@')[-1] if '@' in MONGO_URI else "HIDDEN"
-        })
+        with open(LEADERBOARD_FILE, 'w') as f:
+            json.dump(data, f, indent=4)
     except Exception as e:
-        return jsonify({
-            "status": "Failed",
-            "error": str(e),
-            "type": str(type(e))
-        }), 500
+        logger.error(f"Error saving leaderboard: {e}")
 
 @app.route('/api/leaderboard/join', methods=['POST'])
 def join_leaderboard():
     try:
-        # Ensure connection
-        if users_collection is None:
-            get_mongo_client()
-            
-        if users_collection is None:
-            return jsonify({"error": "Database not connected. Check server logs."}), 503
-            
         data = request.json
         if not data:
              return jsonify({"error": "Invalid JSON body"}), 400
@@ -440,34 +392,34 @@ def join_leaderboard():
         if not all([roll_no, name, percentage]):
             return jsonify({"error": "Missing required data fields"}), 400
             
-        # Upsert user (Update if exists, Insert if new)
-        users_collection.update_one(
-            {"roll_no": roll_no},
-            {"$set": {
-                "name": name,
-                "percentage": float(percentage),
-                "last_updated": datetime.utcnow()
-            }},
-            upsert=True
-        )
+        leaderboard = load_leaderboard()
+        
+        # Update or add user
+        leaderboard[roll_no] = {
+            "roll_no": roll_no,
+            "name": name,
+            "percentage": float(percentage),
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+        save_leaderboard(leaderboard)
         return jsonify({"success": True, "message": "Joined leaderboard!"})
 
     except Exception as e:
-        logger.error(f"Leaderboard join CRITICAL error: {e}", exc_info=True)
+        logger.error(f"Leaderboard join error: {e}", exc_info=True)
         return jsonify({"error": f"Internal Error: {str(e)}"}), 500
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
-    # Ensure connection
-    if users_collection is None:
-        get_mongo_client()
-        
-    if users_collection is None:
-        return jsonify({"error": "Database not connected. Check server logs."}), 503
-        
     try:
-        # Get top 50 users sorted by percentage (descending)
-        top_users = list(users_collection.find({}, {"_id": 0, "name": 1, "percentage": 1, "roll_no": 1}).sort("percentage", -1).limit(50))
+        leaderboard = load_leaderboard()
+        # Convert dict to list
+        users = list(leaderboard.values())
+        # Sort by percentage descending
+        users.sort(key=lambda x: x.get('percentage', 0), reverse=True)
+        # Limit to top 50
+        top_users = users[:50]
+        
         return jsonify(top_users)
     except Exception as e:
         logger.error(f"Leaderboard fetch error: {e}")
