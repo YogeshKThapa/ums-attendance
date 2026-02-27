@@ -389,7 +389,7 @@ def join_leaderboard():
         name = data.get('name')
         percentage = data.get('percentage')
         
-        if not all([roll_no, name, percentage]):
+        if not roll_no or not name or percentage is None:
             return jsonify({"error": "Missing required data fields"}), 400
             
         leaderboard = load_leaderboard()
