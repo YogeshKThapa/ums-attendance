@@ -470,16 +470,27 @@ const LoginForm = () => {
         return (
             <Leaderboard
                 studentData={{ ...studentData, roll_no: loginId }}
-                overallPercentage={
-                    // Calculate overall percentage from attendanceData if available
-                    attendanceData.length > 0
-                        ? (() => {
-                            const totalHeld = attendanceData.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
-                            const totalAttended = attendanceData.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
-                            return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
-                        })()
-                        : "0.00"
-                }
+                overallPercentage={(() => {
+                    // Try current attendance data first (if we are looking at overall)
+                    if (selectedMonth === '0' && attendanceData.length > 0) {
+                        const totalHeld = attendanceData.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
+                        const totalAttended = attendanceData.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
+                        return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
+                    }
+                    // Fallback to cached overall data if we have it
+                    if (overallData?.attendance_data?.length > 0) {
+                        const totalHeld = overallData.attendance_data.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
+                        const totalAttended = overallData.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
+                        return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
+                    }
+                    // Last resort, if regular attendance data is there (even if not overall month)
+                    if (attendanceData.length > 0) {
+                        const totalHeld = attendanceData.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
+                        const totalAttended = attendanceData.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
+                        return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
+                    }
+                    return "0.00";
+                })()}
                 onBack={() => setView('dashboard')}
             />
         );
