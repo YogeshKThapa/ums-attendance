@@ -353,30 +353,46 @@ def get_attendance():
     except Exception as e:
         logger.error(f"Attendance fetch error: {e}")
         return jsonify({"error": str(e)}), 500
-
-# --- Flat File (JSON) Leaderboard Setup ---
+# --- Redis Leaderboard Setup ---
 import os
 import json
 from datetime import datetime
+import redis
 
-LEADERBOARD_FILE = os.path.join(os.path.dirname(__file__), 'leaderboard.json')
+# Initialize Redis client
+redis_url = os.environ.get("UPSTASH_REDIS_URL")
+if redis_url:
+    try:
+        redis_client = redis.from_url(redis_url)
+        logger.info("Connected to Upstash Redis for leaderboard.")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}")
+        redis_client = None
+else:
+    redis_client = None
+    logger.warning("UPSTASH_REDIS_URL environment variable is not set. Leaderboard functionality may fail.")
+
+REDIS_LEADERBOARD_KEY = "UMS_LEADERBOARD"
 
 def load_leaderboard():
-    if not os.path.exists(LEADERBOARD_FILE):
+    if not redis_client:
         return {}
     try:
-        with open(LEADERBOARD_FILE, 'r') as f:
-            return json.load(f)
+        data_str = redis_client.get(REDIS_LEADERBOARD_KEY)
+        if data_str:
+            return json.loads(data_str)
+        return {}
     except Exception as e:
-        logger.error(f"Error loading leaderboard: {e}")
+        logger.error(f"Error loading leaderboard from Redis: {e}")
         return {}
 
 def save_leaderboard(data):
+    if not redis_client:
+        return
     try:
-        with open(LEADERBOARD_FILE, 'w') as f:
-            json.dump(data, f, indent=4)
+        redis_client.set(REDIS_LEADERBOARD_KEY, json.dumps(data))
     except Exception as e:
-        logger.error(f"Error saving leaderboard: {e}")
+        logger.error(f"Error saving leaderboard to Redis: {e}")
 
 @app.route('/api/leaderboard/join', methods=['POST'])
 def join_leaderboard():
