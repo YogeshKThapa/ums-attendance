@@ -132,9 +132,18 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                     </div>
 
                     {loading ? (
-                        <div className="loading-spinner">Loading rankings...</div>
+                        <div style={{ textAlign: 'center', padding: '40px' }}>
+                            <div className="spinner"></div>
+                            <p>Loading rankings...</p>
+                        </div>
                     ) : error ? (
-                        <div className="error-msg">{error}</div>
+                        <div className="error-message">{error}</div>
+                    ) : leaders.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                            <div style={{ fontSize: '48px', marginBottom: '10px' }}>🌵</div>
+                            <p>No rankings yet.</p>
+                            <p style={{ fontSize: '14px' }}>Be the first to join the leaderboard!</p>
+                        </div>
                     ) : (
                         <div className="rank-list">
                             {leaders.map((user, index) => (

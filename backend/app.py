@@ -1,10 +1,18 @@
+import os
+import json
+import logging
+import uuid
+import base64
+from datetime import datetime
+from dotenv import load_dotenv
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from bs4 import BeautifulSoup
-import base64
-import uuid
-import logging
+import redis
+
+# Load environment variables from .env
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -354,10 +362,6 @@ def get_attendance():
         logger.error(f"Attendance fetch error: {e}")
         return jsonify({"error": str(e)}), 500
 # --- Redis Leaderboard Setup ---
-import os
-import json
-from datetime import datetime
-import redis
 
 # Initialize Redis client
 redis_url = os.environ.get("UPSTASH_REDIS_URL")
@@ -376,11 +380,17 @@ REDIS_LEADERBOARD_KEY = "UMS_LEADERBOARD"
 
 def load_leaderboard():
     if not redis_client:
+        logger.error("Redis client not initialized.")
         return {}
     try:
         data_str = redis_client.get(REDIS_LEADERBOARD_KEY)
         if data_str:
-            return json.loads(data_str)
+            data = json.loads(data_str)
+            if isinstance(data, dict):
+                return data
+            else:
+                logger.warning(f"Leaderboard data in Redis is not a dict: {type(data)}")
+                return {}
         return {}
     except Exception as e:
         logger.error(f"Error loading leaderboard from Redis: {e}")
@@ -388,9 +398,11 @@ def load_leaderboard():
 
 def save_leaderboard(data):
     if not redis_client:
+        logger.error("Redis client not initialized. Cannot save.")
         return
     try:
         redis_client.set(REDIS_LEADERBOARD_KEY, json.dumps(data))
+        logger.info("Leaderboard saved successfully.")
     except Exception as e:
         logger.error(f"Error saving leaderboard to Redis: {e}")
 
@@ -401,12 +413,12 @@ def join_leaderboard():
         if not data:
              return jsonify({"error": "Invalid JSON body"}), 400
 
-        roll_no = data.get('roll_no')
-        name = data.get('name')
+        roll_no = str(data.get('roll_no', ''))
+        name = data.get('name', 'Unknown')
         percentage = data.get('percentage')
         
-        if not roll_no or not name or percentage is None:
-            return jsonify({"error": "Missing required data fields"}), 400
+        if not roll_no or percentage is None:
+            return jsonify({"error": "Missing required data fields (roll_no, percentage)"}), 400
             
         leaderboard = load_leaderboard()
         
@@ -428,18 +440,30 @@ def join_leaderboard():
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     try:
+        if not redis_client:
+             return jsonify({"error": "Leaderboard service unavailable (Redis disconnected)"}), 503
+
         leaderboard = load_leaderboard()
         # Convert dict to list
         users = list(leaderboard.values())
+        
+        # Ensure all users have numeric percentages for sorting
+        for u in users:
+            try:
+                u['percentage'] = float(u.get('percentage', 0))
+            except:
+                u['percentage'] = 0.0
+
         # Sort by percentage descending
         users.sort(key=lambda x: x.get('percentage', 0), reverse=True)
         # Limit to top 50
         top_users = users[:50]
         
+        logger.info(f"Returning {len(top_users)} leaderboard entries.")
         return jsonify(top_users)
     except Exception as e:
         logger.error(f"Leaderboard fetch error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Failed to fetch rankings: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
