@@ -597,3 +597,55 @@ button[type="submit"]:hover,
     transform: rotate(360deg);
   }
 }
+
+/* --- What's New Banner --- */
+.whats-new-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: var(--text-color);
+}
+
+.whats-new-badge {
+  flex-shrink: 0;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 1px;
+  text-transform: uppercase;
+}
+
+.whats-new-text {
+  flex: 1;
+  margin: 0;
+  line-height: 1.4;
+  color: var(--secondary-text);
+}
+
+.whats-new-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--secondary-text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  margin-top: 1px;
+  opacity: 0.6;
+}
+
+.whats-new-dismiss:hover {
+  opacity: 1;
+}

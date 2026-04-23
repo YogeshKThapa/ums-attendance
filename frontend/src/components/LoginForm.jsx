@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import AttendanceSmartView from './AttendanceSmartView';
 import AttendanceTable from './AttendanceTable';
 import Leaderboard from './Leaderboard';
+import WhatsNew from './WhatsNew';
 
 const LoginForm = () => {
     // App State
@@ -408,6 +409,7 @@ const LoginForm = () => {
         return (
             <div className="login-container">
                 <h2>Select Profile</h2>
+                <WhatsNew />
                 <div className="profiles-grid">
                     {profiles.map((p, idx) => (
                         <div key={idx} onClick={() => handleProfileSelect(p)} className="profile-card">

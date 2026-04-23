@@ -60,7 +60,7 @@
                                                 
                                             </li>
 
-</ul>
+                                        </ul>
 
                                     </div>
                                 </div>
@@ -110,7 +110,7 @@
                                 <div class="form-group mb-3">
                                     <label>1.)User Id (Roll No./Application No.)  <span class="text-danger">*</span></label>
                                     
-                                    <input class="form-control" data-val="true" data-val-required="Required" id="RollNo" name="RollNo" type="text" value="231620101073" />
+                                    <input class="form-control" data-val="true" data-val-required="Required" id="RollNo" name="RollNo" type="text" value="231620101039" />
                                     <span class="field-validation-valid text-danger" data-valmsg-for="RollNo" data-valmsg-replace="true"></span>
                                 </div>
                             </div>
@@ -120,14 +120,14 @@
                                         2.)Password (Student Date of Birth)
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <input class="datepicker-here form-control" data-language="en" data-val="true" data-val-required="Required" id="DateOfBirth" name="DateOfBirth" onchange="changedate()" placeholder="DD/MM/YYYY" readonly="readonly" type="text" value="16/11/2005" />
+                                    <input class="datepicker-here form-control" data-language="en" data-val="true" data-val-required="Required" id="DateOfBirth" name="DateOfBirth" onchange="changedate()" placeholder="DD/MM/YYYY" readonly="readonly" type="text" value="16/08/2004" />
                                     <span class="field-validation-valid text-danger" data-valmsg-for="DateOfBirth" data-valmsg-replace="true"></span>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label>3.)Enter Captcha</label>
-                                    <input class="form-control" data-val="true" data-val-required="Required" id="Captcha" name="Captcha" type="text" value="8VD17" />
+                                    <input class="form-control" data-val="true" data-val-required="Required" id="Captcha" name="Captcha" type="text" value="QPN83" />
                                     <span class="field-validation-valid" data-valmsg-for="Captcha" data-valmsg-replace="true"></span>
                                 </div>
                             </div>
@@ -172,7 +172,7 @@
                                 <td style="text-align: left; font-size: 12px; padding-top: 5px;">
                                 </td>
                                 <td style="text-align: right; font-size: 12px; padding-top: 5px;">
-                                    <b>Print Date :</b> 03/12/2025 15:46:36
+                                    <b>Print Date :</b> 23/04/2026 17:02:00
                                 </td>
                             </tr>
                         </table>
@@ -186,20 +186,20 @@
                                 <table class="table table-bordered table-striped">
                                     <tr>
                                         <th>Student Name</th>
-                                        <td><label id="lblStudentName">YOGESH KUMAR</label></td>
+                                        <td><label id="lblStudentName">MOHIT BHANDARI</label></td>
                                         <th>Roll No./Application No.</th>
-                                        <td><label id="lblFatherName">231620101073</label></td>
+                                        <td><label id="lblFatherName">231620101039</label></td>
                                     </tr>
                                     <tr>
                                         <th>Father Name</th>
-                                        <td><label id="lblFatherName">HEERA SINGH</label></td>
+                                        <td><label id="lblFatherName">JAGDISH SINGH</label></td>
                                         <th>Mother Name</th>
-                                        <td><label id="lblMotherName">MADHU SINGH</label></td>
+                                        <td><label id="lblMotherName">KAMALA BHANDARI</label></td>
                                         
                                     </tr>
                                     <tr>
                                         <th>Date Of Birth</th>
-                                        <td><label id="lblDateOfBirth">16/11/2005</label></td>
+                                        <td><label id="lblDateOfBirth">16/08/2004</label></td>
                                         <th>College Name</th>
                                         <td> <label id="CollegeName">DR. A.P.J ABDUL KALAM INSTITUTE OF TECHNOLOGY (A CAMPUS INSTITUTION OF UNIVERSITY), TANAKPUR [162]</label></td>                                      
                                     </tr>
@@ -230,7 +230,7 @@
                                 <input type="hidden" name="CollegeId" id="hdnCollegeId" value="67" />
                                 <input type="hidden" name="BranchId" id="hdnBranchId" value="1" />
                                 <input type="hidden" name="CourseId" id="hdnCourseId" value="1" />
-                                <input type="hidden" name="StudentAdmissionId" id="hdnStudentAdmissionId" value="32338" />
+                                <input type="hidden" name="StudentAdmissionId" id="hdnStudentAdmissionId" value="31950" />
                                 <hr />
                             </div>
                             <div class="row DivhideShow">
@@ -258,9 +258,8 @@
                                             <span class="text-danger">*</span>
                                         </label>
                                         <select class="form-select form-control" data-val="true" data-val-number="The field Year must be a number." data-val-required="The Year field is required." id="Year" name="Year"><option value="">--Select--</option>
+<option value="2026">2026</option>
 <option value="2025">2025</option>
-<option value="2024">2024</option>
-<option value="2023">2023</option>
 </select>
                                         <span class="field-validation-valid text-danger" data-valmsg-for="Year" data-valmsg-replace="true"></span>
                                         
@@ -483,6 +482,9 @@
         $('.tblShowHide').hide();
     }
 </script>
+        <div id="divLoader">
+            <img src="/ums/Content/ums/images/loadingImg.gif" alt="not showing" id="loading" />
+        </div>
         <!-- InstanceEndEditable -->
         <footer>
             <div class="row">
