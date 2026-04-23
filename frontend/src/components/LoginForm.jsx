@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import AttendanceSmartView from './AttendanceSmartView';
 import AttendanceTable from './AttendanceTable';
 import Leaderboard from './Leaderboard';
@@ -37,6 +38,12 @@ const LoginForm = () => {
     const [selectedYear, setSelectedYear] = useState('');
     const [viewMode, setViewMode] = useState('smart');
     const [showTableModal, setShowTableModal] = useState(false);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = showTableModal ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+    }, [showTableModal]);
 
     // Load Profiles and Cache on Mount
     useEffect(() => {
@@ -571,19 +578,20 @@ const LoginForm = () => {
                             />
                         </div>
 
-                        {/* ── Table Modal ── */}
-                        {showTableModal && (
+                        {/* ── Table Modal (Portal → mounts on document.body) ── */}
+                        {showTableModal && ReactDOM.createPortal(
                             <div className="table-modal-overlay" onClick={() => setShowTableModal(false)}>
                                 <div className="table-modal-content" onClick={e => e.stopPropagation()}>
                                     <div className="table-modal-header">
-                                        <span className="table-modal-title">Attendance Table</span>
+                                        <span className="table-modal-title">📋 Attendance Table</span>
                                         <button className="table-modal-close" onClick={() => setShowTableModal(false)}>✕</button>
                                     </div>
                                     <div className="table-modal-body">
                                         <AttendanceTable data={attendanceData} headers={tableHeaders} />
                                     </div>
                                 </div>
-                            </div>
+                            </div>,
+                            document.body
                         )}
                     </>
                 ) : (
