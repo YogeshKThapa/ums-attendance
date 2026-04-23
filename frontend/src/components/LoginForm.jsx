@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AttendanceSmartView from './AttendanceSmartView';
+import AttendanceTable from './AttendanceTable';
 import Leaderboard from './Leaderboard';
 
 const LoginForm = () => {
@@ -569,32 +570,7 @@ const LoginForm = () => {
                                     isMonthly={selectedMonth !== '0'}
                                 />
                             ) : (
-                                <table className="attendance-table">
-                                    <thead><tr>{tableHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
-                                    <tbody>
-                                        {attendanceData.map((row, i) => (
-                                            <tr key={i}>
-                                                {row.map((cell, j) => {
-                                                    // Column 0 is Subject Name
-                                                    if (j === 0) {
-                                                        const abbr = cell.length > 20 ? cell.replace(/[^A-Z]/g, '') : cell;
-                                                        // Use acronym if len > 20, else keep. (e.g. "Software Engineering" -> "SE")
-                                                        // Better fallback: First letter of each word
-                                                        const smartAbbr = cell.length > 15
-                                                            ? cell.split(' ')
-                                                                .filter(w => w.length > 0 && !['and', 'of', 'the', 'in', 'to'].includes(w.toLowerCase()))
-                                                                .map(w => w[0].toUpperCase())
-                                                                .join('')
-                                                            : cell;
-
-                                                        return <td key={j} title={cell}>{smartAbbr.length < 2 ? cell.substring(0, 15) + '...' : smartAbbr}</td>;
-                                                    }
-                                                    return <td key={j}>{cell}</td>;
-                                                })}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                <AttendanceTable data={attendanceData} headers={tableHeaders} />
                             )}
                         </div>
                     </>
