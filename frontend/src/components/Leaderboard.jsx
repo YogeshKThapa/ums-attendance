@@ -97,23 +97,29 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                         See how your attendance compares with others! <br />
                         <b>Privacy Note:</b> Your name and attendance % will be visible to other students.
                     </p>
-                    <button
-                        onClick={handleJoin}
-                        disabled={joining}
-                        style={{
-                            background: '#4caf50',
-                            color: 'white',
-                            border: 'none',
-                            padding: '12px 24px',
-                            borderRadius: '25px',
-                            fontSize: '16px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            opacity: joining ? 0.7 : 1
-                        }}
-                    >
-                        {joining ? 'Joining...' : 'Yes, Join Leaderboard'}
-                    </button>
+                    {overallPercentage === null ? (
+                        <div style={{ color: '#e53935', marginBottom: '20px', fontWeight: 'bold', padding: '15px', background: '#ffebee', borderRadius: '8px' }}>
+                            ⚠️ Please go back to the Dashboard and fetch your "Overall Semester" attendance to join.
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleJoin}
+                            disabled={joining}
+                            style={{
+                                background: '#4caf50',
+                                color: 'white',
+                                border: 'none',
+                                padding: '12px 24px',
+                                borderRadius: '25px',
+                                fontSize: '16px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                opacity: joining ? 0.7 : 1
+                            }}
+                        >
+                            {joining ? 'Joining...' : 'Yes, Join Leaderboard'}
+                        </button>
+                    )}
                     <p style={{ fontSize: '12px', color: '#999', marginTop: '20px' }}>
                         You can opt-out at any time (simulated).
                     </p>
@@ -124,7 +130,7 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                     <div className="join-card">
                         <div className="my-score">
                             <span>My Score:</span>
-                            <strong>{overallPercentage}%</strong>
+                            <strong>{overallPercentage === null ? 'No Data' : `${overallPercentage}%`}</strong>
                         </div>
                         <p className="privacy-note" style={{ marginTop: '10px', color: '#666' }}>
                             ✨ You are on the leaderboard. Your rank updates automatically.

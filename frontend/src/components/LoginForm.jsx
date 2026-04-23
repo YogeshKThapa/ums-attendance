@@ -368,22 +368,25 @@ const LoginForm = () => {
                 saveToCache(rNo, updatePayload);
 
                 // --- AUTOMATIC LEADERBOARD UPDATE ---
-                // Calculate percentage immediately
-                const totalHeld = data.attendance_data.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
-                const totalAttended = data.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
-                const percentage = totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
+                // Only update if we are fetching the overall semester data
+                if (selectedMonth === '0') {
+                    // Calculate percentage immediately
+                    const totalHeld = data.attendance_data.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
+                    const totalAttended = data.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
+                    const percentage = totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
 
-                if (localStorage.getItem(`leaderboard_optin_${rNo}`) === 'true') {
-                    // Send to backend silently ONLY if opted in
-                    fetch(`${API_BASE}/api/leaderboard/join`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            roll_no: rNo,
-                            name: studentData.student_name,
-                            percentage: percentage
-                        })
-                    }).catch(err => console.error("Leaderboard update failed", err));
+                    if (localStorage.getItem(`leaderboard_optin_${rNo}`) === 'true') {
+                        // Send to backend silently ONLY if opted in
+                        fetch(`${API_BASE}/api/leaderboard/join`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                roll_no: rNo,
+                                name: studentData.student_name,
+                                percentage: percentage
+                            })
+                        }).catch(err => console.error("Leaderboard update failed", err));
+                    }
                 }
             }
             if (data.html) setAttendanceHtml(data.html);
@@ -494,13 +497,8 @@ const LoginForm = () => {
                         const totalAttended = overallData.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
                         return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
                     }
-                    // Last resort, if regular attendance data is there (even if not overall month)
-                    if (attendanceData.length > 0) {
-                        const totalHeld = attendanceData.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
-                        const totalAttended = attendanceData.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
-                        return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
-                    }
-                    return "0.00";
+                    // No overall data available yet
+                    return null;
                 })()}
                 onBack={() => setView('dashboard')}
             />
