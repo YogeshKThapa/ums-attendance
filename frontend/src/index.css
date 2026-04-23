@@ -360,7 +360,7 @@ button[type="submit"]:hover,
   position: relative;
 }
 
-.attendance-html-container table {
+.attendance-table {
   width: max-content;
   /* Let table grow as needed based on content */
   min-width: 100%;
@@ -371,8 +371,8 @@ button[type="submit"]:hover,
 }
 
 /* Sticky First Column (Subject) */
-.attendance-html-container th:first-child,
-.attendance-html-container td:first-child {
+.attendance-table th:first-child,
+.attendance-table td:first-child {
   position: sticky;
   left: 0;
   background-color: var(--card-bg);
@@ -384,7 +384,7 @@ button[type="submit"]:hover,
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
 }
 
-.attendance-html-container th:first-child {
+.attendance-table th:first-child {
   background-color: var(--table-header-bg);
   /* Match header bg */
   z-index: 3;
@@ -392,8 +392,8 @@ button[type="submit"]:hover,
 }
 
 /* Specific styling for scrollable dates */
-.attendance-html-container th,
-.attendance-html-container td {
+.attendance-table th,
+.attendance-table td {
   padding: 12px 15px;
   text-align: center;
   /* Center dates */
@@ -404,8 +404,8 @@ button[type="submit"]:hover,
 }
 
 /* Revert text alignment for Subject column */
-.attendance-html-container td:first-child,
-.attendance-html-container th:first-child {
+.attendance-table td:first-child,
+.attendance-table th:first-child {
   text-align: left;
   min-width: 150px;
   /* Ensure Subject name has space */
@@ -414,7 +414,7 @@ button[type="submit"]:hover,
   /* Allow subject name to wrap if needed */
 }
 
-.attendance-html-container th {
+.attendance-table th {
   background-color: var(--table-header-bg);
   font-weight: 600;
   color: var(--text-color);
@@ -426,60 +426,19 @@ button[type="submit"]:hover,
 /* Mobile Table Optimizations */
 @media (max-width: 600px) {
 
-  .attendance-html-container th,
-  .attendance-html-container td {
+  .attendance-table th,
+  .attendance-table td {
     padding: 10px 8px;
     font-size: 0.8rem;
   }
 }
 
-.attendance-html-container tr:last-child td {
+.attendance-table tr:last-child td {
   border-bottom: none;
 }
 
-.attendance-html-container tr:hover td {
+.attendance-table tr:hover {
   background-color: var(--hover-bg);
-}
-
-/* Specific styling to match the screenshot */
-.ums-attendance-table {
-  font-family: Arial, sans-serif;
-  font-size: 13px;
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.ums-attendance-table th, 
-.ums-attendance-table td {
-  border: 1px solid #ddd;
-  padding: 6px 12px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.ums-attendance-table th {
-  background-color: #fcebbb; /* Yellowish header from screenshot */
-  color: #333;
-  font-weight: bold;
-}
-
-.ums-attendance-table tbody tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.ums-attendance-table tbody tr:nth-child(odd) {
-  background-color: #fff;
-}
-
-.ums-attendance-table td:first-child, 
-.ums-attendance-table th:first-child {
-  text-align: left;
-  min-width: 200px;
-}
-
-.ums-attendance-table .total-row {
-  font-weight: bold;
-  background-color: #fff !important; /* Total row is white in screenshot */
 }
 
 /* --- Leaderboard Styles --- */
