@@ -36,6 +36,7 @@ const LoginForm = () => {
     const [selectedSessionYear, setSelectedSessionYear] = useState('');
     const [selectedYear, setSelectedYear] = useState('');
     const [viewMode, setViewMode] = useState('smart');
+    const [showTableModal, setShowTableModal] = useState(false);
 
     // Load Profiles and Cache on Mount
     useEffect(() => {
@@ -557,22 +558,33 @@ const LoginForm = () => {
                 ) : studentData && attendanceData.length > 0 ? (
                     <>
                         <div className="view-toggle" style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setViewMode(viewMode === 'smart' ? 'table' : 'smart')} style={{ background: 'none', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px' }}>
-                                {viewMode === 'smart' ? 'Show Table' : 'Show Smart View'}
+                            <button onClick={() => setShowTableModal(true)} style={{ background: 'none', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px' }}>
+                                📋 Show Table
                             </button>
                         </div>
                         <div className="attendance-wrapper">
-                            {viewMode === 'smart' ? (
-                                <AttendanceSmartView
-                                    data={attendanceData}
-                                    headers={tableHeaders}
-                                    overallData={overallData}
-                                    isMonthly={selectedMonth !== '0'}
-                                />
-                            ) : (
-                                <AttendanceTable data={attendanceData} headers={tableHeaders} />
-                            )}
+                            <AttendanceSmartView
+                                data={attendanceData}
+                                headers={tableHeaders}
+                                overallData={overallData}
+                                isMonthly={selectedMonth !== '0'}
+                            />
                         </div>
+
+                        {/* ── Table Modal ── */}
+                        {showTableModal && (
+                            <div className="table-modal-overlay" onClick={() => setShowTableModal(false)}>
+                                <div className="table-modal-content" onClick={e => e.stopPropagation()}>
+                                    <div className="table-modal-header">
+                                        <span className="table-modal-title">Attendance Table</span>
+                                        <button className="table-modal-close" onClick={() => setShowTableModal(false)}>✕</button>
+                                    </div>
+                                    <div className="table-modal-body">
+                                        <AttendanceTable data={attendanceData} headers={tableHeaders} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>Select filters and click Go</div>
