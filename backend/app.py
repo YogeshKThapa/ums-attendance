@@ -300,11 +300,53 @@ def get_attendance():
                 final_data.append([subj, str(h), str(a), p])
             
             logger.info(f"Aggregated Data: Found {len(final_data)} subjects.")
+
+            # Create an HTML table for the overall view that mirrors the specific Date 1-31 structure from the screenshot
+            aggregated_html = "<div style='overflow-x: auto; width: 100%; border-radius: 8px;'><table class='ums-attendance-table table-bordered'>"
+            aggregated_html += "<tbody style='text-align: center;'>"
+            aggregated_html += "<tr style='background-color: #f7eed7; font-weight: bold;'>"
+            aggregated_html += "<td style='text-align: left;'>Paper Name</td>"
+            for d in range(1, 32):
+                aggregated_html += f"<td>{d}</td>"
+            aggregated_html += "<td>Total Classes Held</td><td>Total Classes Attended</td><td>Attended %</td></tr>"
+
+            total_held_all = 0
+            total_attended_all = 0
+
+            for row in final_data:
+                subj, h_str, a_str, p_str = row
+                h = int(h_str)
+                a = int(a_str)
+                total_held_all += h
+                total_attended_all += a
+                aggregated_html += "<tr>"
+                aggregated_html += f"<td style='text-align: left;'>{subj}</td>"
+                
+                # Fill 1-31 columns with blanks for overall aggregated view since precise dates aren't easily extracted across all months
+                # The user's screenshot is likely a monthly view. If this is overall, we just show empty date cells for formatting consistency.
+                for _ in range(1, 32):
+                    aggregated_html += "<td></td>"
+                
+                aggregated_html += f"<td>{h}</td><td>{a}</td><td>{p_str}</td></tr>"
+
+            # Add Total Row
+            total_pct = f"{(total_attended_all/total_held_all*100):.2f}" if total_held_all > 0 else "0.00"
+            aggregated_html += "<tr style='font-weight: bold;'><td style='text-align: left;'>Total</td>"
+            for _ in range(1, 32):
+                aggregated_html += "<td></td>"
+            aggregated_html += f"<td>{total_held_all}</td><td>{total_attended_all}</td><td>{total_pct}</td></tr>"
+
+            aggregated_html += "</tbody></table></div>"
+
+            # Fake headers to maintain compatibility with smart view parsing
+            headers = ["Subject"] + [str(i) for i in range(1, 32)] + ["Total Classes Held", "Total Classes Attended", "Attended %"]
+
             return jsonify({
-                "html": "", # No HTML for aggregated view
+                "html": aggregated_html,
                 "attendance_data": final_data,
-                "headers": ["Subject", "Total Classes Held", "Total Classes Attended", "Attended %"]
+                "headers": headers
             })
+
 
         else:
             # Single month fetch (existing logic)
@@ -339,13 +381,27 @@ def get_attendance():
                         row = [td.text.strip() for td in cells]
                         attendance_data.append(row)
                 logger.info(f"Extracted {len(attendance_data)} data rows.")
+                
+                # Clean up table for frontend HTML rendering
+                for tag in table.find_all(True):
+                    tag.attrs.pop('style', None)
+                    tag.attrs.pop('class', None)
+                    tag.attrs.pop('bgcolor', None)
+                    tag.attrs.pop('width', None)
+                for attr in ['style', 'class', 'bgcolor', 'width', 'border', 'cellpadding', 'cellspacing']:
+                    table.attrs.pop(attr, None)
+                    
+                table['class'] = 'ums-attendance-table'
+                
+                cleaned_html = str(table)
             else:
                 logger.warning("NO TABLE FOUND in response!")
                 # Log a snippet of response to see what we got
                 logger.warning(f"Response snippet: {html_content[:500]}")
+                cleaned_html = ""
             
             return jsonify({
-                "html": resp.text,
+                "html": cleaned_html,
                 "attendance_data": attendance_data,
                 "headers": headers
             })

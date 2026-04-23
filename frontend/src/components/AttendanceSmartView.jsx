@@ -11,15 +11,20 @@ const AttendanceSmartView = ({ data, headers, overallData, isMonthly }) => {
     let displayMessage = '';
     let displayStatus = 'safe';
 
-    if (isMonthly) {
-        displayStatus = overall.percent >= 75 ? 'safe' : 'danger';
-        displayMessage = overall.percent >= 75 ? 'Good Attendance 👍' : 'Low Attendance ⚠️';
-    } else {
-        displayMessage = globalStats ? globalStats.message : overall.message;
-        displayStatus = globalStats ? globalStats.status : overall.status;
-    }
+    // Only show remark and smart view if we actually have attendance data.
+    if (!overall || subjects.length === 0) return <div className="no-data">No attendance data available</div>;
 
-    if (!overall) return <div className="no-data">No attendance data available</div>;
+    // The user ONLY wants the 75% remark to show up at overall attendance, and it MUST be based on overall stats
+    // We use globalStats (which contains the true overall semester calculation if it was fetched)
+    // If not looking at the overall view, don't show the advice message at all.
+    displayMessage = (!isMonthly && globalStats) ? globalStats.message : null;
+    displayStatus = (!isMonthly && globalStats) ? globalStats.status : 'safe';
+
+    // If globalStats isn't available but user is at an overall view, fallback to `overall`
+    if (!isMonthly && !globalStats) {
+        displayMessage = overall.message;
+        displayStatus = overall.status;
+    }
 
     const getColor = (p) => p >= 75 ? '#4caf50' : '#f44336';
     const getBgColor = (p) => p >= 75 ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)';

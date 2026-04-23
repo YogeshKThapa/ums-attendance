@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AttendanceSmartView from './AttendanceSmartView';
+import AttendanceTable from './AttendanceTable';
 import Leaderboard from './Leaderboard';
 
 const LoginForm = () => {
@@ -107,6 +108,7 @@ const LoginForm = () => {
         if (cachedData.attendanceData) {
             setAttendanceData(cachedData.attendanceData);
             setTableHeaders(cachedData.headers || []);
+            setAttendanceHtml(cachedData.html || '');
             setOverallData(cachedData.overallData || null);
         }
 
@@ -277,11 +279,11 @@ const LoginForm = () => {
                 // Update Cache with semesters
                 saveToCache(rNo, { semesters: data });
 
-                // Auto-select the semester with Value '73' (requested hardcoded default), else last one
+                // Auto-select the 6th semester by default, else last one
                 if (data.length > 0) {
-                    const defaultSem = data.find(s => s.Value == '73');
+                    const defaultSem = data.find(s => /\b6\b|\bVI\b|6th/i.test(s.Text));
                     if (defaultSem) {
-                        setSelectedSemester('73');
+                        setSelectedSemester(defaultSem.Value);
                     } else {
                         setSelectedSemester(data[data.length - 1].Value);
                     }
@@ -347,7 +349,8 @@ const LoginForm = () => {
                 // Cache this attendance result!
                 const updatePayload = {
                     attendanceData: data.attendance_data,
-                    headers: data.headers
+                    headers: data.headers,
+                    html: data.html
                 };
 
                 if (selectedMonth === '0') {
@@ -503,11 +506,6 @@ const LoginForm = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
                         <h2 style={{ margin: 0 }}>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
-                        {lastUpdated && (
-                            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
-                                Data from: {new Date(lastUpdated).toLocaleTimeString()} ({Math.floor((Date.now() - lastUpdated) / 60000)}m ago)
-                            </div>
-                        )}
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button onClick={() => setView('leaderboard')} style={{ background: '#FFD700', color: '#000', padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
@@ -569,32 +567,7 @@ const LoginForm = () => {
                                     isMonthly={selectedMonth !== '0'}
                                 />
                             ) : (
-                                <table className="attendance-table">
-                                    <thead><tr>{tableHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
-                                    <tbody>
-                                        {attendanceData.map((row, i) => (
-                                            <tr key={i}>
-                                                {row.map((cell, j) => {
-                                                    // Column 0 is Subject Name
-                                                    if (j === 0) {
-                                                        const abbr = cell.length > 20 ? cell.replace(/[^A-Z]/g, '') : cell;
-                                                        // Use acronym if len > 20, else keep. (e.g. "Software Engineering" -> "SE")
-                                                        // Better fallback: First letter of each word
-                                                        const smartAbbr = cell.length > 15
-                                                            ? cell.split(' ')
-                                                                .filter(w => w.length > 0 && !['and', 'of', 'the', 'in', 'to'].includes(w.toLowerCase()))
-                                                                .map(w => w[0].toUpperCase())
-                                                                .join('')
-                                                            : cell;
-
-                                                        return <td key={j} title={cell}>{smartAbbr.length < 2 ? cell.substring(0, 15) + '...' : smartAbbr}</td>;
-                                                    }
-                                                    return <td key={j}>{cell}</td>;
-                                                })}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                <AttendanceTable data={attendanceData} headers={tableHeaders} />
                             )}
                         </div>
                     </>
