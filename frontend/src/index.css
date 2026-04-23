@@ -530,6 +530,8 @@ button[type="submit"]:hover,
   padding: 15px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
+  min-height: 64px;
+  box-sizing: border-box;
 }
 
 .rank-item.highlight {
@@ -546,6 +548,7 @@ button[type="submit"]:hover,
 
 .rank-info {
   flex: 1;
+  min-width: 0;    /* let flex child shrink below content width */
   margin: 0 15px;
 }
 
@@ -553,9 +556,13 @@ button[type="submit"]:hover,
   font-weight: 600;
   margin-bottom: 5px;
   color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rank-bar-bg {
+  width: 100%;        /* always span the full flex-child width */
   height: 6px;
   background: var(--bg-color);
   border-radius: 3px;
