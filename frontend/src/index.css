@@ -61,6 +61,13 @@ body {
   box-sizing: border-box;
 }
 
+main {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
 header {
   display: flex;
   justify-content: center;
@@ -449,6 +456,8 @@ button[type="submit"]:hover,
 .leaderboard-container {
   padding: 20px;
   max-width: 600px;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
 }
 
@@ -590,6 +599,28 @@ button[type="submit"]:hover,
   align-items: center;
   justify-content: flex-end;
   align-self: stretch;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .leaderboard-container {
+    padding: 10px;
+  }
+
+  .rank-item {
+    padding: 10px;
+    min-height: 56px;
+  }
+
+  .rank-info {
+    margin: 0 10px;
+  }
+
+  .rank-score {
+    padding-left: 10px;
+    margin-left: 10px;
+    width: 55px;
+  }
 }
 
 /* --- Loading Spinner --- */
