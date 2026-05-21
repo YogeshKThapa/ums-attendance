@@ -21,8 +21,111 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})  # Explicitly enable CORS for API routes
 
-# Store active sessions in memory
-sessions = {}
+# --- Redis Connection Setup ---
+redis_url = os.environ.get("UPSTASH_REDIS_URL")
+redis_client = None
+if redis_url:
+    try:
+        redis_client = redis.from_url(redis_url)
+        logger.info("Connected to Upstash Redis.")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}")
+else:
+    logger.warning("UPSTASH_REDIS_URL environment variable not found. Redis features will fall back to memory.")
+
+class SessionStore:
+    """
+    Manages user requests.Session instances.
+    If Redis is available, sessions are serialized as JSON and stored in Redis.
+    Otherwise, falls back to a standard in-memory dictionary.
+    """
+    def __init__(self, r_client=None):
+        self.redis_client = r_client
+        self.memory_sessions = {}
+
+    def get(self, session_id):
+        if not session_id:
+            return None
+        
+        if self.redis_client:
+            try:
+                data_str = self.redis_client.get(f"session:{session_id}")
+                if data_str:
+                    data = json.loads(data_str)
+                    session = requests.Session()
+                    # Reconstruct cookies from stored dict
+                    cookie_dict = data.get("cookies", {})
+                    cookie_jar = requests.utils.cookiejar_from_dict(cookie_dict)
+                    session.cookies.update(cookie_jar)
+                    # Reconstruct custom properties
+                    session.student_data = data.get("student_data", {})
+                    session.hidden_fields = data.get("hidden_fields", {})
+                    return session
+            except Exception as e:
+                logger.error(f"Redis get session error: {e}")
+
+        # Fallback to memory
+        return self.memory_sessions.get(session_id)
+
+    def save(self, session_id, session):
+        if not session_id or not session:
+            return
+
+        if self.redis_client:
+            try:
+                cookie_dict = requests.utils.dict_from_cookiejar(session.cookies)
+                student_data = getattr(session, 'student_data', {})
+                hidden_fields = getattr(session, 'hidden_fields', {})
+                data = {
+                    "cookies": cookie_dict,
+                    "student_data": student_data,
+                    "hidden_fields": hidden_fields
+                }
+                # Store in Redis with 2 hours TTL (7200 seconds)
+                self.redis_client.set(f"session:{session_id}", json.dumps(data), ex=7200)
+                return
+            except Exception as e:
+                logger.error(f"Redis save session error: {e}")
+
+        # Fallback to memory
+        self.memory_sessions[session_id] = session
+
+    def exists(self, session_id):
+        if not session_id:
+            return False
+        if self.redis_client:
+            try:
+                return self.redis_client.exists(f"session:{session_id}") > 0
+            except Exception as e:
+                logger.error(f"Redis exists check error: {e}")
+        return session_id in self.memory_sessions
+
+# Instantiate global session store
+session_store = SessionStore(redis_client)
+
+# --- Attendance Caching Helpers ---
+def get_cached_attendance(roll_no, semester_id, session_year, year, month_id):
+    if not redis_client or not roll_no:
+        return None
+    try:
+        cache_key = f"cache:attendance:{roll_no}:{semester_id}:{session_year}:{year}:{month_id}"
+        cached = redis_client.get(cache_key)
+        if cached:
+            logger.info(f"Cache hit for attendance: {cache_key}")
+            return json.loads(cached)
+    except Exception as e:
+        logger.error(f"Error reading attendance cache: {e}")
+    return None
+
+def set_cached_attendance(roll_no, semester_id, session_year, year, month_id, data, ex=7200):
+    if not redis_client or not roll_no:
+        return
+    try:
+        cache_key = f"cache:attendance:{roll_no}:{semester_id}:{session_year}:{year}:{month_id}"
+        redis_client.set(cache_key, json.dumps(data), ex=ex)
+        logger.info(f"Cached attendance under key: {cache_key}")
+    except Exception as e:
+        logger.error(f"Error writing attendance cache: {e}")
 
 BASE_URL = "https://online.uktech.ac.in"
 # New URL for public view
@@ -39,7 +142,6 @@ def init_session():
     """
     session_id = str(uuid.uuid4())
     session = requests.Session()
-    sessions[session_id] = session
 
     try:
         # 1. Get Page
@@ -63,6 +165,9 @@ def init_session():
         captcha_resp.raise_for_status()
         captcha_b64 = base64.b64encode(captcha_resp.content).decode('utf-8')
 
+        # Save session to store (persisting cookies)
+        session_store.save(session_id, session)
+
         return jsonify({
             "session_id": session_id,
             "captcha_image": f"data:image/png;base64,{captcha_b64}"
@@ -80,10 +185,9 @@ def login():
     dob = data.get('password')     # Reuse password field for DOB
     captcha_text = data.get('captcha_text')
 
-    if not session_id or session_id not in sessions:
+    session = session_store.get(session_id)
+    if not session:
         return jsonify({"error": "Invalid or expired session"}), 400
-
-    session = sessions[session_id]
 
     # No encryption needed for this public form based on inspection
     payload = {
@@ -146,6 +250,9 @@ def login():
              session.student_data = student_data
              session.hidden_fields = hidden_fields
              
+             # Save session to store (persisting credentials and cookies)
+             session_store.save(session_id, session)
+             
              # Save for inspection
              with open("result_page.html", "w", encoding="utf-8") as f:
                 f.write(post_resp.text)
@@ -169,10 +276,10 @@ def login():
 @app.route('/api/semesters', methods=['GET'])
 def get_semesters():
     session_id = request.args.get('session_id')
-    if not session_id or session_id not in sessions:
+    session = session_store.get(session_id)
+    if not session:
         return jsonify({"error": "Invalid or expired session"}), 400
 
-    session = sessions[session_id]
     hidden_fields = getattr(session, 'hidden_fields', {})
     branch_id = hidden_fields.get('hdnBranchId')
     
@@ -193,28 +300,29 @@ def get_attendance():
     data = request.json
     session_id = data.get('session_id')
     
-    if not session_id or session_id not in sessions:
+    session = session_store.get(session_id)
+    if not session:
+        logger.error(f"Session {session_id} NOT FOUND in session store!")
         return jsonify({"error": "Invalid or expired session"}), 400
 
-    session = sessions[session_id]
     hidden_fields = getattr(session, 'hidden_fields', {})
     
-    # Required params from frontend
+    # Required/optional params from frontend
     session_year = data.get('session_year', '2025') # Default to current
     semester_id = data.get('semester_id')
     year = data.get('year', '2026')
     month_id = data.get('month_id')
+    roll_no = data.get('roll_no')
+    dob = data.get('dob')
+    bypass_cache = data.get('bypass_cache', False)
     
-    logger.info(f"Attendance Request Data: session_year={session_year}, semester_id={semester_id}, year={year}, month_id={month_id}, roll_no={data.get('roll_no')}")
-    logger.info(f"Checking Session ID: {session_id}")
-    logger.info(f"Active Session IDs in memory: {list(sessions.keys())}")
-    
-    if not session_id or session_id not in sessions:
-        logger.error(f"Session {session_id} NOT FOUND in active sessions!")
-        return jsonify({"error": "Invalid or expired session"}), 400
+    logger.info(f"Attendance Request Data: session_year={session_year}, semester_id={semester_id}, year={year}, month_id={month_id}, roll_no={roll_no}")
 
-    session = sessions[session_id]
-    hidden_fields = getattr(session, 'hidden_fields', {})
+    # Check cache first if not bypass_cache
+    if not bypass_cache:
+        cached_result = get_cached_attendance(roll_no, semester_id, session_year, year, month_id)
+        if cached_result is not None:
+            return jsonify(cached_result)
     
     # Params from hidden fields
     payload = {
@@ -226,8 +334,8 @@ def get_attendance():
         "SessionYear": session_year,
         "Year": year,
         "MonthId": month_id,
-        "RollNo": data.get('roll_no'), 
-        "DateOfBirth": data.get('dob') 
+        "RollNo": roll_no, 
+        "DateOfBirth": dob 
     }
     
     try:
@@ -308,11 +416,14 @@ def get_attendance():
                 final_data.append([subj, str(h), str(a), p])
             
             logger.info(f"Aggregated Data: Found {len(final_data)} subjects.")
-            return jsonify({
+            
+            result = {
                 "html": "", # No HTML for aggregated view
                 "attendance_data": final_data,
                 "headers": ["Subject", "Total Classes Held", "Total Classes Attended", "Attended %"]
-            })
+            }
+            set_cached_attendance(roll_no, semester_id, session_year, year, month_id, result)
+            return jsonify(result)
 
         else:
             # Single month fetch (existing logic)
@@ -352,29 +463,21 @@ def get_attendance():
                 # Log a snippet of response to see what we got
                 logger.warning(f"Response snippet: {html_content[:500]}")
             
-            return jsonify({
+            result = {
                 "html": resp.text,
                 "attendance_data": attendance_data,
                 "headers": headers
-            })
+            }
+            set_cached_attendance(roll_no, semester_id, session_year, year, month_id, result)
+            return jsonify(result)
 
     except Exception as e:
         logger.error(f"Attendance fetch error: {e}")
         return jsonify({"error": str(e)}), 500
 # --- Redis Leaderboard Setup ---
 
-# Initialize Redis client
-redis_url = os.environ.get("UPSTASH_REDIS_URL")
-if redis_url:
-    try:
-        redis_client = redis.from_url(redis_url)
-        logger.info("Connected to Upstash Redis for leaderboard.")
-    except Exception as e:
-        logger.error(f"Failed to connect to Redis: {e}")
-        redis_client = None
-else:
-    redis_client = None
-    logger.warning("UPSTASH_REDIS_URL environment variable is not set. Leaderboard functionality may fail.")
+# Redis client is initialized at the top of the file
+# We reuse the same global redis_client here.
 
 REDIS_LEADERBOARD_KEY = "UMS_LEADERBOARD"
 
