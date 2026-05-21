@@ -5,6 +5,7 @@
   --text-color: #333;
   --card-bg: #ffffff;
   --card-border: #eee;
+  --border-color: #eee;
   --input-bg: #ffffff;
   --input-border: #ddd;
   --secondary-text: #666;
@@ -26,6 +27,7 @@
   --text-color: #e0e0e0;
   --card-bg: #1e1e1e;
   --card-border: #333;
+  --border-color: #333;
   --input-bg: #2d2d2d;
   --input-border: #444;
   --secondary-text: #d0d0d0;
@@ -543,6 +545,7 @@ button[type="submit"]:hover,
   font-size: 1.2rem;
   font-weight: bold;
   width: 40px;
+  flex-shrink: 0;
   color: var(--text-secondary);
 }
 
@@ -578,6 +581,15 @@ button[type="submit"]:hover,
 .rank-score {
   font-weight: bold;
   color: var(--primary-color);
+  border-left: 1px solid var(--border-color);
+  padding-left: 20px;
+  margin-left: 15px;
+  width: 65px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: stretch;
 }
 
 /* --- Loading Spinner --- */
