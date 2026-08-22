@@ -768,3 +768,164 @@ button[type="submit"]:active,
 .whats-new-dismiss:hover {
   opacity: 1;
 }
+
+/* --- Material 3 Date Picker Styles --- */
+.datepicker-container {
+  position: relative;
+  width: 100%;
+}
+
+.datepicker-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.datepicker-input {
+  padding-right: 3rem !important;
+}
+
+.datepicker-icon-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  transition: var(--transition-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.datepicker-icon-btn:hover {
+  background: var(--hover-bg);
+}
+
+.m3-datepicker-card {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  margin-top: 8px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-m);
+  box-shadow: 0 8px 24px var(--shadow-color);
+  padding: 16px;
+  width: 310px;
+  box-sizing: border-box;
+  animation: m3-fade-in 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes m3-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.m3-datepicker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.m3-nav-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+  transition: var(--transition-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 32px;
+}
+
+.m3-nav-btn:hover {
+  background: var(--hover-bg);
+}
+
+.m3-selectors {
+  display: flex;
+  gap: 8px;
+}
+
+.m3-datepicker-select {
+  padding: 4px 24px 4px 8px !important;
+  font-size: 0.9rem !important;
+  border-radius: var(--radius-s) !important;
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--input-bg) !important;
+  width: auto !important;
+  cursor: pointer;
+  background-position: right 0.5rem top 50% !important;
+}
+
+.m3-datepicker-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--secondary-text);
+  margin-bottom: 8px;
+}
+
+.m3-datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-color);
+  transition: var(--transition-standard);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.calendar-day.empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+.calendar-day.day:hover {
+  background: var(--hover-bg);
+  color: var(--primary-color);
+}
+
+.calendar-day.day.selected {
+  background: var(--primary-color) !important;
+  color: var(--on-primary) !important;
+  font-weight: bold;
+}
+
+.calendar-day:active {
+  transform: scale(0.85);
+  transition: transform 0.05s ease-out;
+}

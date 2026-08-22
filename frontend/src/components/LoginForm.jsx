@@ -1,15 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import AttendanceSmartView from './AttendanceSmartView';
 import AttendanceTable from './AttendanceTable';
 import Leaderboard from './Leaderboard';
 import WhatsNew from './WhatsNew';
+import DatePicker from './DatePicker';
 
 const LoginForm = () => {
     // App State
     const [view, setView] = useState('profiles'); // 'profiles', 'login', 'dashboard'
     const [profiles, setProfiles] = useState([]);
     const [activeProfile, setActiveProfile] = useState(null); // The profile currently trying to login
+
+    const rollNoInputRef = useRef(null);
+    const captchaInputRef = useRef(null);
+
+    // Auto-focus logic when login view is active: focus Roll Number if new profile, Captcha if logging in existing profile
+    useEffect(() => {
+        if (view === 'login') {
+            const timer = setTimeout(() => {
+                if (activeProfile) {
+                    if (captchaInputRef.current) {
+                        captchaInputRef.current.focus();
+                    }
+                } else {
+                    if (rollNoInputRef.current) {
+                        rollNoInputRef.current.focus();
+                    }
+                }
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [view, activeProfile]);
 
     // Login Form State
     const [loginId, setLoginId] = useState('');
@@ -452,11 +474,11 @@ const LoginForm = () => {
                             <>
                                 <div className="form-group">
                                     <label>Roll Number</label>
-                                    <input type="text" value={loginId} onChange={(e) => setLoginId(e.target.value)} required placeholder="Enter Roll No" />
+                                    <input ref={rollNoInputRef} type="text" value={loginId} onChange={(e) => setLoginId(e.target.value)} required placeholder="Enter Roll No" />
                                 </div>
                                 <div className="form-group">
                                     <label>Date of Birth</label>
-                                    <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="DD/MM/YYYY" />
+                                    <DatePicker value={password} onChange={setPassword} required />
                                 </div>
                             </>
                         )}
@@ -465,7 +487,7 @@ const LoginForm = () => {
                             <label>Captcha</label>
                             {captchaImage && <img src={captchaImage} alt="Captcha" className="captcha-img" />}
                             <button type="button" onClick={fetchCaptcha} className="refresh-btn">↻</button>
-                            <input type="text" value={captchaText} onChange={(e) => setCaptchaText(e.target.value)} required placeholder="Enter code" autoFocus />
+                            <input ref={captchaInputRef} type="text" value={captchaText} onChange={(e) => setCaptchaText(e.target.value)} required placeholder="Enter code" />
                         </div>
 
                         <button type="submit" disabled={loading}>
