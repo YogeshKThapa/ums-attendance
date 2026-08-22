@@ -149,6 +149,14 @@ def init_session():
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
 
+        # Extract Request Verification Token
+        token_tag = soup.find('input', {'name': '__RequestVerificationToken'})
+        verification_token = token_tag.get('value') if token_tag else None
+        logger.info(f"Extracted __RequestVerificationToken: {verification_token}")
+        
+        # Initialize hidden_fields with the token
+        session.hidden_fields = {'__RequestVerificationToken': verification_token}
+
         # 2. Find CAPTCHA Image URL
         # Based on inspection: <img src="/ums/Student/Master/GetCaptchaimage" ...>
         captcha_img_tag = soup.find('img', src=lambda x: x and 'GetCaptchaimage' in x)
@@ -189,11 +197,17 @@ def login():
     if not session:
         return jsonify({"error": "Invalid or expired session"}), 400
 
+    hidden_fields = getattr(session, 'hidden_fields', {})
+    verification_token = hidden_fields.get('__RequestVerificationToken')
+    logger.info(f"Retrieved __RequestVerificationToken for login: {verification_token}")
+
     # No encryption needed for this public form based on inspection
     payload = {
+        "__RequestVerificationToken": verification_token,
         "RollNo": roll_no,
         "DateOfBirth": dob,
-        "Captcha": captcha_text
+        "Captcha": captcha_text,
+        "btnSubmit": "Login"
     }
 
     try:
