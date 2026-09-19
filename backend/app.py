@@ -205,13 +205,22 @@ def init_session():
         logger.error(f"Init error: {e}")
         return jsonify({"error": str(e)}), 500
 
+def normalize_dob(dob_str):
+    if not dob_str:
+        return ''
+    cleaned = str(dob_str).strip().replace('-', '/')
+    parts = cleaned.split('/')
+    if len(parts) == 3 and len(parts[0]) == 4:  # YYYY/MM/DD -> DD/MM/YYYY
+        return f"{parts[2]}/{parts[1]}/{parts[0]}"
+    return cleaned
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
     session_id = data.get('session_id')
-    roll_no = data.get('login_id') # Reuse login_id field for RollNo
-    dob = data.get('password')     # Reuse password field for DOB
-    captcha_text = data.get('captcha_text')
+    roll_no = str(data.get('login_id', '')).strip() # Reuse login_id field for RollNo
+    dob = normalize_dob(data.get('password', ''))    # Reuse password field for DOB
+    captcha_text = str(data.get('captcha_text', '')).strip()
 
     session = session_store.get(session_id)
     if not session:
@@ -252,12 +261,15 @@ def login():
         # Parse the response to check student details and hidden fields
         soup = BeautifulSoup(post_resp.text, 'html.parser')
         
-        lbl_student = soup.find('label', id='lblStudentName')
+        lbl_student = soup.find('label', id='lblStudentName') or soup.find(id='lblStudentName')
         student_name = lbl_student.text.strip() if lbl_student else ""
         
         hidden_fields = {}
         for hid in ['hdnCollegeId', 'hdnBranchId', 'hdnCourseId', 'hdnStudentAdmissionId']:
-            tag = soup.find('input', id=hid)
+            tag = soup.find('input', id=hid) or soup.find('input', attrs={'name': hid})
+            if not tag:
+                unprefixed = hid.replace('hdn', '')
+                tag = soup.find('input', id=unprefixed) or soup.find('input', attrs={'name': unprefixed})
             if tag and tag.get('value'):
                 hidden_fields[hid] = tag.get('value')
         
@@ -271,15 +283,15 @@ def login():
         token_input = soup.find(id='Token') or soup.find(attrs={'name': 'Token'})
         hidden_fields['Token'] = token_input.get('value') if token_input and token_input.get('value') else ''
 
-        # Verify authentic login: student name must be present and admission ID must be populated
+        # Verify authentic login: student name or admission ID must be present
         admission_id = hidden_fields.get('hdnStudentAdmissionId')
-        if not student_name or not admission_id:
-            logger.warning("Result: Student details or admission ID not found in response.")
+        if not student_name and not admission_id:
+            logger.warning(f"Result: Student details not found for RollNo {roll_no}. Snippet: {post_resp.text[:400]}")
             swal_match = re.search(r"swal\(\s*['\"]([^'\"]+)['\"]", post_resp.text)
             error_msg = swal_match.group(1) if swal_match else "Could not fetch details. Please check Roll No / DOB."
             return jsonify({"success": False, "message": error_msg, "debug_html_snippet": post_resp.text[:200]}), 401
         
-        logger.info(f"Result: Success for {student_name} (AdmissionId: {admission_id})")
+        logger.info(f"Result: Success for {student_name or roll_no} (AdmissionId: {admission_id})")
         
         student_data = {
             "student_name": student_name,
@@ -362,8 +374,8 @@ def get_attendance():
     semester_id = data.get('semester_id')
     year = data.get('year', '2026')
     month_id = data.get('month_id')
-    roll_no = data.get('roll_no')
-    dob = data.get('dob')
+    roll_no = str(data.get('roll_no', '')).strip()
+    dob = normalize_dob(data.get('dob', ''))
     bypass_cache = data.get('bypass_cache', False)
     
     logger.info(f"Attendance Request Data: session_year={session_year}, semester_id={semester_id}, year={year}, month_id={month_id}, roll_no={roll_no}")

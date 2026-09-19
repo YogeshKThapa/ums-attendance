@@ -214,9 +214,9 @@ const LoginForm = () => {
     // API Base URL (from environment variable or empty for local proxy)
     const API_BASE = import.meta.env.VITE_API_URL || '';
 
-    const fetchCaptcha = async () => {
+    const fetchCaptcha = async (clearError = true) => {
         setLoading(true);
-        setError('');
+        if (clearError) setError('');
         try {
             const res = await fetch(`${API_BASE}/api/init`);
             if (!res.ok) throw new Error('Failed to load login page');
@@ -290,7 +290,7 @@ const LoginForm = () => {
                 setView('dashboard');
             } else {
                 setError(data.message || 'Login failed');
-                fetchCaptcha();
+                await fetchCaptcha(false);
                 setCaptchaText('');
             }
         } catch (err) {
@@ -464,6 +464,11 @@ const LoginForm = () => {
                     ← Back to Profiles
                 </button>
                 <h2>{activeProfile ? `Login as ${activeProfile.nickname}` : 'New Login'}</h2>
+                {activeProfile && (
+                    <div style={{ marginBottom: '14px', fontSize: '13px', color: '#666', textAlign: 'center' }}>
+                        Roll No: <strong>{loginId}</strong> &bull; DOB: <strong>{password}</strong>
+                    </div>
+                )}
                 {error && <div className="error-message">{error}</div>}
 
                 {loading && !captchaImage ? (
