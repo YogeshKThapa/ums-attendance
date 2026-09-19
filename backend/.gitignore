@@ -1,5 +1,9 @@
-
 # Environment secrets
 .env
 *.env
 .env.*
+
+# Python cache & temporary test files
+__pycache__/
+*.pyc
+test_redis.py

@@ -929,3 +929,17 @@ button[type="submit"]:active,
   transform: scale(0.85);
   transition: transform 0.05s ease-out;
 }
+
+/* Mobile Media Query for Date Picker Dialog View */
+@media (max-width: 480px) {
+  .m3-datepicker-card {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90% !important;
+    max-width: 320px !important;
+    margin-top: 0 !important;
+    box-shadow: 0 12px 36px var(--shadow-color) !important;
+  }
+}

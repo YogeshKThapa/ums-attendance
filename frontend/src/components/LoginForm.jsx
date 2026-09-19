@@ -15,9 +15,19 @@ const LoginForm = () => {
     const rollNoInputRef = useRef(null);
     const captchaInputRef = useRef(null);
 
-    // Auto-focus logic when login view is active: focus Roll Number if new profile, Captcha if logging in existing profile
+    // Login Form State
+    const [loginId, setLoginId] = useState('');
+    const [password, setPassword] = useState('');
+    const [captchaText, setCaptchaText] = useState('');
+    const [captchaImage, setCaptchaImage] = useState(null);
+    const [sessionId, setSessionId] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    // Auto-focus logic when login view is active and loading is finished (inputs are rendered in DOM)
     useEffect(() => {
-        if (view === 'login') {
+        if (view === 'login' && !loading && captchaImage) {
             const timer = setTimeout(() => {
                 if (activeProfile) {
                     if (captchaInputRef.current) {
@@ -31,17 +41,7 @@ const LoginForm = () => {
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [view, activeProfile]);
-
-    // Login Form State
-    const [loginId, setLoginId] = useState('');
-    const [password, setPassword] = useState('');
-    const [captchaText, setCaptchaText] = useState('');
-    const [captchaImage, setCaptchaImage] = useState(null);
-    const [sessionId, setSessionId] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    }, [view, activeProfile, loading, captchaImage]);
 
 
     // Dashboard State

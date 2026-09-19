@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 import uuid
@@ -224,64 +225,80 @@ def login():
         
         logger.info(f"Response Code: {post_resp.status_code}")
         
-        # Check for specific error messages
-        if "Invalid Captcha" in post_resp.text:
+        # Check for specific error messages (SweetAlert and inline warnings)
+        if "Kindly Enter Valid Captcha" in post_resp.text or "Invalid Captcha" in post_resp.text or "Enter Valid Captcha" in post_resp.text:
              logger.warning("Result: Invalid Captcha")
              return jsonify({"success": False, "message": "Invalid CAPTCHA"}), 401
         
-        # Heuristic for success: If we see the RollNo in the table, it worked.
-        if roll_no in post_resp.text:
-             logger.info("Result: Success")
-             
-             # Parse the response to get details and hidden fields
-             soup = BeautifulSoup(post_resp.text, 'html.parser')
-             
-             student_data = {
-                 "student_name": soup.find('label', id='lblStudentName').text.strip() if soup.find('label', id='lblStudentName') else "Unknown",
-                 "father_name": soup.find('label', id='lblFatherName').text.strip() if soup.find('label', id='lblFatherName') else "Unknown",
-                 "course_name": soup.find('label', id='CourseName').text.strip() if soup.find('label', id='CourseName') else "Unknown",
-                 "branch_name": soup.find('label', id='BranchName').text.strip() if soup.find('label', id='BranchName') else "Unknown",
-             }
-             
-             hidden_fields = {}
-             for hid in ['hdnCollegeId', 'hdnBranchId', 'hdnCourseId', 'hdnStudentAdmissionId']:
-                 tag = soup.find('input', id=hid)
-                 if tag:
-                     hidden_fields[hid] = tag.get('value')
-            
-             # Extract Dropdown Options
-             session_years = []
-             sy_select = soup.find('select', id='SessionYear')
-             if sy_select:
-                 session_years = [{"Value": opt['value'], "Text": opt.text.strip()} for opt in sy_select.find_all('option') if opt['value']]
+        # Parse the response to check student details and hidden fields
+        soup = BeautifulSoup(post_resp.text, 'html.parser')
+        
+        lbl_student = soup.find('label', id='lblStudentName')
+        student_name = lbl_student.text.strip() if lbl_student else ""
+        
+        hidden_fields = {}
+        for hid in ['hdnCollegeId', 'hdnBranchId', 'hdnCourseId', 'hdnStudentAdmissionId']:
+            tag = soup.find('input', id=hid)
+            if tag and tag.get('value'):
+                hidden_fields[hid] = tag.get('value')
+        
+        # Also extract post-login __RequestVerificationToken and Token for attendance requests
+        token_tag = soup.find('input', {'name': '__RequestVerificationToken'})
+        if token_tag and token_tag.get('value'):
+            hidden_fields['__RequestVerificationToken'] = token_tag.get('value')
+        else:
+            hidden_fields['__RequestVerificationToken'] = verification_token
 
-             years = []
-             y_select = soup.find('select', id='Year')
-             if y_select:
-                 years = [{"Value": opt['value'], "Text": opt.text.strip()} for opt in y_select.find_all('option') if opt['value']]
+        token_input = soup.find(id='Token') or soup.find(attrs={'name': 'Token'})
+        hidden_fields['Token'] = token_input.get('value') if token_input and token_input.get('value') else ''
 
-             # Store these in the session for later use
-             session.student_data = student_data
-             session.hidden_fields = hidden_fields
-             
-             # Save session to store (persisting credentials and cookies)
-             session_store.save(session_id, session)
-             
-             # Save for inspection
-             with open("result_page.html", "w", encoding="utf-8") as f:
-                f.write(post_resp.text)
-             
-             return jsonify({
-                 "success": True, 
-                 "message": "Login Successful",
-                 "student_data": student_data,
-                 "hidden_fields": hidden_fields,
-                 "session_years": session_years,
-                 "years": years
-             })
-             
-        # Fallback
-        return jsonify({"success": False, "message": "Could not fetch details. Check RollNo/DOB.", "debug_html_snippet": post_resp.text[:200]}), 401
+        # Verify authentic login: student name must be present and admission ID must be populated
+        admission_id = hidden_fields.get('hdnStudentAdmissionId')
+        if not student_name or not admission_id:
+            logger.warning("Result: Student details or admission ID not found in response.")
+            swal_match = re.search(r"swal\(\s*['\"]([^'\"]+)['\"]", post_resp.text)
+            error_msg = swal_match.group(1) if swal_match else "Could not fetch details. Please check Roll No / DOB."
+            return jsonify({"success": False, "message": error_msg, "debug_html_snippet": post_resp.text[:200]}), 401
+        
+        logger.info(f"Result: Success for {student_name} (AdmissionId: {admission_id})")
+        
+        student_data = {
+            "student_name": student_name,
+            "father_name": soup.find('label', id='lblFatherName').text.strip() if soup.find('label', id='lblFatherName') else "Unknown",
+            "course_name": soup.find('label', id='CourseName').text.strip() if soup.find('label', id='CourseName') else "Unknown",
+            "branch_name": soup.find('label', id='BranchName').text.strip() if soup.find('label', id='BranchName') else "Unknown",
+        }
+        
+        # Extract Dropdown Options
+        session_years = []
+        sy_select = soup.find('select', id='SessionYear')
+        if sy_select:
+            session_years = [{"Value": opt['value'], "Text": opt.text.strip()} for opt in sy_select.find_all('option') if opt.get('value')]
+
+        years = []
+        y_select = soup.find('select', id='Year')
+        if y_select:
+            years = [{"Value": opt['value'], "Text": opt.text.strip()} for opt in y_select.find_all('option') if opt.get('value')]
+
+        # Store these in the session for later use
+        session.student_data = student_data
+        session.hidden_fields = hidden_fields
+        
+        # Save session to store (persisting credentials and cookies)
+        session_store.save(session_id, session)
+        
+        # Save for inspection
+        with open("result_page.html", "w", encoding="utf-8") as f:
+           f.write(post_resp.text)
+        
+        return jsonify({
+            "success": True, 
+            "message": "Login Successful",
+            "student_data": student_data,
+            "hidden_fields": hidden_fields,
+            "session_years": session_years,
+            "years": years
+        })
 
     except Exception as e:
         logger.error(f"Login error: {e}")
@@ -338,18 +355,31 @@ def get_attendance():
         if cached_result is not None:
             return jsonify(cached_result)
     
-    # Params from hidden fields
+    post_headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': LOGIN_URL,
+        'Origin': BASE_URL,
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+
+    # Params for ShowStudentAttendanceListByRollNoDOB POST endpoint
+    verification_token = hidden_fields.get('__RequestVerificationToken', '')
+    token_val = hidden_fields.get('Token', '')
+    
     payload = {
-        "CollegeId": hidden_fields.get('hdnCollegeId'),
-        "CourseId": hidden_fields.get('hdnCourseId'),
-        "BranchId": hidden_fields.get('hdnBranchId'),
-        "StudentAdmissionId": hidden_fields.get('hdnStudentAdmissionId'),
-        "CourseBranchDurationId": semester_id,
-        "SessionYear": session_year,
-        "Year": year,
-        "MonthId": month_id,
-        "RollNo": roll_no, 
-        "DateOfBirth": dob 
+        "__RequestVerificationToken": verification_token,
+        "Token": token_val,
+        "SessionYear": str(session_year) if session_year else "",
+        "CourseBranchDurationId": str(semester_id) if semester_id else "",
+        "Year": str(year) if year else "",
+        "MonthId": str(month_id) if month_id else "",
+        # Legacy/fallback parameters
+        "CollegeId": hidden_fields.get('hdnCollegeId', ''),
+        "CourseId": hidden_fields.get('hdnCourseId', ''),
+        "BranchId": hidden_fields.get('hdnBranchId', ''),
+        "StudentAdmissionId": hidden_fields.get('hdnStudentAdmissionId', ''),
+        "RollNo": roll_no or '', 
+        "DateOfBirth": dob or ''
     }
     
     try:
@@ -365,7 +395,7 @@ def get_attendance():
                 local_payload['MonthId'] = str(m)
                 try:
                     url = f"{BASE_URL}/ums/Student/Public/ShowStudentAttendanceListByRollNoDOB"
-                    r = session.get(url, params=local_payload)
+                    r = session.post(url, data=local_payload, headers=post_headers)
                     r.raise_for_status()
                     
                     # Parse JSON wrapper if present
@@ -404,16 +434,25 @@ def get_attendance():
                         if 'total' in subj.lower(): continue
                         
                         try:
-                            h_val = int(cells[idx_held]) if cells[idx_held].isdigit() else 0
-                            a_val = int(cells[idx_attended]) if cells[idx_attended].isdigit() else 0
+                            tch_cell = tr.find(class_=lambda c: c and 'clsTCH' in c)
+                            tp_cell = tr.find(class_=lambda c: c and 'clsTP' in c)
+
+                            if tch_cell and tp_cell:
+                                tch_text = tch_cell.text.strip()
+                                tp_text = tp_cell.text.strip()
+                                h_val = int(tch_text) if tch_text.isdigit() else 0
+                                a_val = int(tp_text) if tp_text.isdigit() else 0
+                            else:
+                                h_val = int(cells[idx_held]) if (0 <= idx_held < len(cells) and cells[idx_held].isdigit()) else 0
+                                a_val = int(cells[idx_attended]) if (0 <= idx_attended < len(cells) and cells[idx_attended].isdigit()) else 0
                             
                             if subj not in aggregated_data:
                                 aggregated_data[subj] = {"held": 0, "attended": 0}
                             
                             aggregated_data[subj]["held"] += h_val
                             aggregated_data[subj]["attended"] += a_val
-                        except:
-                            pass
+                        except Exception as parse_err:
+                            logger.error(f"Error parsing row cells in month {m}: {parse_err}")
                 except Exception as ex:
                     logger.error(f"Error fetching month {m}: {ex}")
 
@@ -440,10 +479,10 @@ def get_attendance():
             return jsonify(result)
 
         else:
-            # Single month fetch (existing logic)
+            # Single month fetch (POST)
             url = f"{BASE_URL}/ums/Student/Public/ShowStudentAttendanceListByRollNoDOB"
-            logger.info(f"Fetching single month {month_id} from {url}")
-            resp = session.get(url, params=payload)
+            logger.info(f"Fetching single month {month_id} via POST from {url}")
+            resp = session.post(url, data=payload, headers=post_headers)
             resp.raise_for_status()
             
             # Parse HTML to JSON
@@ -478,7 +517,7 @@ def get_attendance():
                 logger.warning(f"Response snippet: {html_content[:500]}")
             
             result = {
-                "html": resp.text,
+                "html": html_content,
                 "attendance_data": attendance_data,
                 "headers": headers
             }
