@@ -19,8 +19,27 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+RECENT_LOGS = []
+class MemoryLogHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            RECENT_LOGS.append(f"{datetime.utcnow().strftime('%H:%M:%S')} [{record.levelname}] {msg}")
+            if len(RECENT_LOGS) > 100:
+                RECENT_LOGS.pop(0)
+        except Exception:
+            pass
+
+mem_handler = MemoryLogHandler()
+mem_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(mem_handler)
+
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})  # Explicitly enable CORS for API routes
+
+@app.route('/api/debug/logs', methods=['GET'])
+def get_debug_logs():
+    return jsonify({"logs": RECENT_LOGS[-50:]})
 
 # --- Redis Connection Setup ---
 redis_url = os.environ.get("UPSTASH_REDIS_URL")
@@ -475,7 +494,8 @@ def get_attendance():
                 "attendance_data": final_data,
                 "headers": ["Subject", "Total Classes Held", "Total Classes Attended", "Attended %"]
             }
-            set_cached_attendance(roll_no, semester_id, session_year, year, month_id, result)
+            if final_data and len(final_data) > 0:
+                set_cached_attendance(roll_no, semester_id, session_year, year, month_id, result)
             return jsonify(result)
 
         else:
@@ -521,7 +541,8 @@ def get_attendance():
                 "attendance_data": attendance_data,
                 "headers": headers
             }
-            set_cached_attendance(roll_no, semester_id, session_year, year, month_id, result)
+            if attendance_data and len(attendance_data) > 0:
+                set_cached_attendance(roll_no, semester_id, session_year, year, month_id, result)
             return jsonify(result)
 
     except Exception as e:
