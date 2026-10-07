@@ -587,8 +587,40 @@ button[type="submit"]:active,
 
 .privacy-note {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--secondary-text);
   margin-top: 10px;
+}
+
+.delete-rank-btn {
+  margin-top: 14px;
+  background: transparent;
+  color: var(--danger-text);
+  border: 1px solid var(--danger-text);
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-standard);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.delete-rank-btn:hover {
+  background: var(--danger-bg);
+  transform: translateY(-1px);
+}
+
+.delete-rank-btn:active {
+  transform: scale(0.95);
+}
+
+.delete-rank-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .rank-list {

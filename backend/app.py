@@ -626,6 +626,32 @@ def join_leaderboard():
         logger.error(f"Leaderboard join error: {e}", exc_info=True)
         return jsonify({"error": f"Internal Error: {str(e)}"}), 500
 
+@app.route('/api/leaderboard/leave', methods=['POST', 'DELETE'])
+@app.route('/api/leaderboard/delete', methods=['POST', 'DELETE'])
+def leave_leaderboard():
+    try:
+        data = request.json or {}
+        roll_no = str(data.get('roll_no', '')).strip()
+        
+        if not roll_no:
+            return jsonify({"error": "Missing required field: roll_no"}), 400
+            
+        leaderboard = load_leaderboard()
+        found_key = next((k for k in leaderboard if str(k).strip() == roll_no), None)
+        
+        if found_key:
+            del leaderboard[found_key]
+            save_leaderboard(leaderboard)
+            logger.info(f"RollNo {roll_no} successfully removed from leaderboard.")
+            return jsonify({"success": True, "message": "Successfully removed from leaderboard!"})
+        else:
+            logger.info(f"RollNo {roll_no} not found on leaderboard.")
+            return jsonify({"success": True, "message": "Rank not found or already removed."})
+            
+    except Exception as e:
+        logger.error(f"Leaderboard leave error: {e}", exc_info=True)
+        return jsonify({"error": f"Internal Error: {str(e)}"}), 500
+
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     try:

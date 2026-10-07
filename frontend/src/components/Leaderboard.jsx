@@ -4,13 +4,14 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
     const [leaders, setLeaders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [joining, setJoining] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
     const API_BASE = import.meta.env.VITE_API_URL || '';
 
     const [optedIn, setOptedIn] = useState(false);
 
     useEffect(() => {
-        const rollNo = studentData.roll_no || studentData.RollNo;
+        const rollNo = studentData?.roll_no || studentData?.RollNo;
         const hasOptedIn = localStorage.getItem(`leaderboard_optin_${rollNo}`) === 'true';
         setOptedIn(hasOptedIn);
 
@@ -40,6 +41,44 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
             setError(err.message || "Failed to load rankings.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteRank = async () => {
+        const rollNo = studentData?.roll_no || studentData?.RollNo;
+        if (!rollNo) return;
+
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete your rank from the leaderboard? Your attendance percentage will no longer be visible to others."
+        );
+        if (!confirmDelete) return;
+
+        setDeleting(true);
+        try {
+            const res = await fetch(`${API_BASE}/api/leaderboard/leave`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roll_no: rollNo })
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Server Error: ${res.status} ${res.statusText} - ${text.substring(0, 100)}`);
+            }
+
+            const data = await res.json();
+            if (data.success) {
+                localStorage.removeItem(`leaderboard_optin_${rollNo}`);
+                setOptedIn(false);
+                setLeaders([]);
+            } else {
+                alert("Failed to delete rank: " + (data.error || data.message || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("Leaderboard Delete Error:", err);
+            alert(`Error deleting rank: ${err.message}`);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -121,7 +160,7 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                         </button>
                     )}
                     <p style={{ fontSize: '12px', color: '#999', marginTop: '20px' }}>
-                        You can opt-out at any time (simulated).
+                        You can delete your rank and opt-out at any time.
                     </p>
                 </div>
             ) : (
@@ -135,6 +174,13 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                         <p className="privacy-note" style={{ marginTop: '10px', color: '#666' }}>
                             ✨ You are on the leaderboard. Your rank updates automatically.
                         </p>
+                        <button
+                            onClick={handleDeleteRank}
+                            disabled={deleting}
+                            className="delete-rank-btn"
+                        >
+                            {deleting ? 'Deleting Rank...' : '🗑️ Delete My Rank'}
+                        </button>
                     </div>
 
                     {loading ? (

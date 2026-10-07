@@ -205,6 +205,7 @@ const LoginForm = () => {
             // Also cleanup cache
             if (profileToDelete) {
                 localStorage.removeItem(`ums_data_${profileToDelete.rollNo}`);
+                localStorage.removeItem(`leaderboard_optin_${profileToDelete.rollNo}`);
             }
         }
     };
