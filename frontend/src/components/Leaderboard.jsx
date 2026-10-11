@@ -6,12 +6,33 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
     const [joining, setJoining] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' | 'info' }
+
     const API_BASE = import.meta.env.VITE_API_URL || '';
+    const rollNo = studentData?.roll_no || studentData?.RollNo;
 
     const [optedIn, setOptedIn] = useState(false);
 
+    // Auto-dismiss toast notifications after 4.5 seconds
     useEffect(() => {
-        const rollNo = studentData?.roll_no || studentData?.RollNo;
+        if (!toast) return;
+        const timer = setTimeout(() => setToast(null), 4500);
+        return () => clearTimeout(timer);
+    }, [toast]);
+
+    // Handle Escape key to close the confirmation modal
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && showDeleteConfirm && !deleting) {
+                setShowDeleteConfirm(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showDeleteConfirm, deleting]);
+
+    useEffect(() => {
         const hasOptedIn = localStorage.getItem(`leaderboard_optin_${rollNo}`) === 'true';
         setOptedIn(hasOptedIn);
 
@@ -20,10 +41,11 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
         } else {
             setLoading(false);
         }
-    }, [studentData]);
+    }, [rollNo]);
 
     const fetchLeaderboard = async () => {
         setLoading(true);
+        setError('');
         try {
             const res = await fetch(`${API_BASE}/api/leaderboard`);
             if (!res.ok) {
@@ -44,14 +66,8 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
         }
     };
 
-    const handleDeleteRank = async () => {
-        const rollNo = studentData?.roll_no || studentData?.RollNo;
+    const handleConfirmDelete = async () => {
         if (!rollNo) return;
-
-        const confirmDelete = window.confirm(
-            "Are you sure you want to delete your rank from the leaderboard? Your attendance percentage will no longer be visible to others."
-        );
-        if (!confirmDelete) return;
 
         setDeleting(true);
         try {
@@ -71,12 +87,14 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                 localStorage.removeItem(`leaderboard_optin_${rollNo}`);
                 setOptedIn(false);
                 setLeaders([]);
+                setShowDeleteConfirm(false);
+                setToast({ message: "Your rank was successfully deleted from the leaderboard.", type: "success" });
             } else {
-                alert("Failed to delete rank: " + (data.error || data.message || "Unknown error"));
+                setToast({ message: "Failed to delete rank: " + (data.error || data.message || "Unknown error"), type: "error" });
             }
         } catch (err) {
             console.error("Leaderboard Delete Error:", err);
-            alert(`Error deleting rank: ${err.message}`);
+            setToast({ message: `Error deleting rank: ${err.message}`, type: "error" });
         } finally {
             setDeleting(false);
         }
@@ -86,9 +104,6 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
         if (!studentData || !overallPercentage) return;
         setJoining(true);
         try {
-            const rollNo = studentData.roll_no || studentData.RollNo;
-            console.log(`Joining Leaderboard at: ${API_BASE}/api/leaderboard/join`); // Debug URL
-
             const res = await fetch(`${API_BASE}/api/leaderboard/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -108,117 +123,217 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
             if (data.success) {
                 localStorage.setItem(`leaderboard_optin_${rollNo}`, 'true');
                 setOptedIn(true);
-                fetchLeaderboard(); // Refresh list
+                setToast({ message: "🎉 Welcome to the leaderboard! Your rank is now live.", type: "success" });
+                fetchLeaderboard();
             } else {
-                alert("Failed to join: " + (data.error || "Unknown error"));
+                setToast({ message: "Failed to join: " + (data.error || "Unknown error"), type: "error" });
             }
         } catch (err) {
             console.error("Leaderboard Join Error:", err);
-            alert(`Error joining: ${err.message}`);
+            setToast({ message: `Error joining: ${err.message}`, type: "error" });
         } finally {
             setJoining(false);
         }
     };
 
+    // Calculate user's standing
+    const userRankIndex = leaders.findIndex(u => String(u.roll_no).trim() === String(rollNo).trim());
+    const userRank = userRankIndex !== -1 ? userRankIndex + 1 : null;
+
     return (
         <div className="leaderboard-container fade-in">
+            {/* Toast Feedback */}
+            {toast && (
+                <div className={`leaderboard-toast ${toast.type}`}>
+                    <span className="toast-icon">
+                        {toast.type === 'success' ? '✅' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
+                    </span>
+                    <span className="toast-text">{toast.message}</span>
+                    <button className="toast-close" onClick={() => setToast(null)} aria-label="Dismiss">✕</button>
+                </div>
+            )}
+
+            {/* Header Navigation */}
             <div className="header-row">
-                <button onClick={onBack} className="back-btn">← Back</button>
+                <button onClick={onBack} className="back-btn" aria-label="Go back to dashboard">
+                    <span className="back-icon">←</span> Dashboard
+                </button>
                 <h2>🏆 Leaderboard</h2>
+                <button 
+                    onClick={fetchLeaderboard} 
+                    className="refresh-btn" 
+                    title="Refresh Rankings" 
+                    disabled={loading || !optedIn}
+                    aria-label="Refresh Leaderboard"
+                >
+                    🔄
+                </button>
             </div>
 
-            {/* Rankings List */}
+            {/* Main Content */}
             {!optedIn ? (
-                <div className="opt-in-view" style={{ textAlign: 'center', padding: '40px 20px' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '20px' }}>🏆</div>
-                    <h3>Join the Leaderboard?</h3>
-                    <p style={{ color: '#666', marginBottom: '30px' }}>
-                        See how your attendance compares with others! <br />
-                        <b>Privacy Note:</b> Your name and attendance % will be visible to other students.
+                <div className="opt-in-view">
+                    <div className="opt-in-badge">🏆</div>
+                    <h3 className="opt-in-title">Join the Leaderboard</h3>
+                    <p className="opt-in-desc">
+                        Compare your attendance with peers and celebrate consistency!
                     </p>
+
+                    <div className="opt-in-privacy-card">
+                        <span className="privacy-badge-icon">🔒</span>
+                        <div>
+                            <strong>Privacy Guarantee</strong>
+                            <p>Only your name and attendance % are shared. You can delete your rank anytime.</p>
+                        </div>
+                    </div>
+
                     {overallPercentage === null ? (
-                        <div style={{ color: '#e53935', marginBottom: '20px', fontWeight: 'bold', padding: '15px', background: '#ffebee', borderRadius: '8px' }}>
-                            ⚠️ Please go back to the Dashboard and fetch your "Overall Semester" attendance to join.
+                        <div className="opt-in-warning-box">
+                            ⚠️ Please go back to the Dashboard and load your <strong>Overall Semester</strong> attendance to join.
                         </div>
                     ) : (
                         <button
                             onClick={handleJoin}
                             disabled={joining}
-                            style={{
-                                background: '#4caf50',
-                                color: 'white',
-                                border: 'none',
-                                padding: '12px 24px',
-                                borderRadius: '25px',
-                                fontSize: '16px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                opacity: joining ? 0.7 : 1
-                            }}
+                            className="opt-in-join-btn"
                         >
-                            {joining ? 'Joining...' : 'Yes, Join Leaderboard'}
+                            {joining ? (
+                                <>
+                                    <span className="spinner-sm"></span> Joining...
+                                </>
+                            ) : (
+                                '🚀 Join Leaderboard'
+                            )}
                         </button>
                     )}
-                    <p style={{ fontSize: '12px', color: '#999', marginTop: '20px' }}>
-                        You can delete your rank and opt-out at any time.
-                    </p>
                 </div>
             ) : (
                 <>
-                    {/* Join Card (Now Status Card) */}
-                    <div className="join-card">
-                        <div className="my-score">
-                            <span>My Score:</span>
-                            <strong>{overallPercentage === null ? 'No Data' : `${overallPercentage}%`}</strong>
+                    {/* Status & Action Card */}
+                    <div className="leaderboard-status-card">
+                        <div className="status-card-header">
+                            <div className="status-live-indicator">
+                                <span className="status-pulse-dot"></span>
+                                <span>Active on Leaderboard</span>
+                            </div>
+                            <button
+                                onClick={() => setShowDeleteConfirm(true)}
+                                disabled={deleting}
+                                className="delete-rank-trigger-btn"
+                                title="Remove your rank from public leaderboard"
+                            >
+                                🗑️ Remove My Rank
+                            </button>
                         </div>
-                        <p className="privacy-note" style={{ marginTop: '10px', color: '#666' }}>
-                            ✨ You are on the leaderboard. Your rank updates automatically.
-                        </p>
-                        <button
-                            onClick={handleDeleteRank}
-                            disabled={deleting}
-                            className="delete-rank-btn"
-                        >
-                            {deleting ? 'Deleting Rank...' : '🗑️ Delete My Rank'}
-                        </button>
+
+                        <div className="status-stats-grid">
+                            <div className="stat-box">
+                                <span className="stat-label">Your Attendance</span>
+                                <span className="stat-value highlight-score">
+                                    {overallPercentage === null ? 'No Data' : `${overallPercentage}%`}
+                                </span>
+                            </div>
+                            <div className="stat-box">
+                                <span className="stat-label">Current Rank</span>
+                                <span className="stat-value">
+                                    {userRank ? `#${userRank} of ${leaders.length}` : (loading ? '...' : '—')}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
+                    {/* Rankings List or Loading/Empty States */}
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <div className="leaderboard-state-box">
                             <div className="spinner"></div>
                             <p>Loading rankings...</p>
                         </div>
                     ) : error ? (
                         <div className="error-message">{error}</div>
                     ) : leaders.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                            <div style={{ fontSize: '48px', marginBottom: '10px' }}>🌵</div>
-                            <p>No rankings yet.</p>
-                            <p style={{ fontSize: '14px' }}>Be the first to join the leaderboard!</p>
+                        <div className="leaderboard-state-box empty">
+                            <div className="state-icon">🌵</div>
+                            <p>No rankings available yet.</p>
+                            <p className="state-subtext">Be the first to join the leaderboard!</p>
                         </div>
                     ) : (
                         <div className="rank-list">
-                            {leaders.map((user, index) => (
-                                <div
-                                    key={index}
-                                    className={`rank-item ${user.roll_no === (studentData.roll_no || studentData.RollNo) ? 'highlight' : ''}`}
-                                >
-                                    <div className="rank-num">#{index + 1}</div>
-                                    <div className="rank-info">
-                                        <div className="rank-name">{user.name}</div>
-                                        <div className="rank-bar-bg">
-                                            <div
-                                                className="rank-bar-fill"
-                                                style={{ width: `${Math.min(user.percentage, 100)}%` }}
-                                            ></div>
+                            {leaders.map((user, index) => {
+                                const isCurrentUser = String(user.roll_no).trim() === String(rollNo).trim();
+                                const rankNum = index + 1;
+                                const medal = rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : null;
+
+                                return (
+                                    <div
+                                        key={user.roll_no || index}
+                                        className={`rank-item ${isCurrentUser ? 'highlight' : ''} ${rankNum <= 3 ? `top-${rankNum}` : ''}`}
+                                    >
+                                        <div className="rank-num">
+                                            {medal ? <span className="rank-medal">{medal}</span> : `#${rankNum}`}
+                                        </div>
+                                        <div className="rank-info">
+                                            <div className="rank-name-row">
+                                                <span className="rank-name">{user.name}</span>
+                                                {isCurrentUser && <span className="you-pill">You</span>}
+                                            </div>
+                                            <div className="rank-bar-bg">
+                                                <div
+                                                    className="rank-bar-fill"
+                                                    style={{ width: `${Math.min(user.percentage, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <div className="rank-score">
+                                            {Number(user.percentage).toFixed(1)}%
                                         </div>
                                     </div>
-                                    <div className="rank-score">{user.percentage}%</div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </>
+            )}
+
+            {/* Custom Modal Confirmation Dialog for Delete Rank */}
+            {showDeleteConfirm && (
+                <div className="confirm-modal-overlay" onClick={() => !deleting && setShowDeleteConfirm(false)}>
+                    <div className="confirm-modal-card" onClick={e => e.stopPropagation()}>
+                        <div className="confirm-modal-icon-wrap">
+                            <div className="confirm-modal-danger-badge">🗑️</div>
+                        </div>
+                        <h3 className="confirm-modal-title">Delete Leaderboard Rank?</h3>
+                        <p className="confirm-modal-desc">
+                            Are you sure you want to remove your rank? Your attendance percentage ({overallPercentage}%) and name will no longer be visible to others.
+                        </p>
+                        <p className="confirm-modal-subtext">
+                            You can easily rejoin at any time from the dashboard.
+                        </p>
+                        <div className="confirm-modal-actions">
+                            <button
+                                type="button"
+                                className="btn-modal-cancel"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={deleting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-modal-delete"
+                                onClick={handleConfirmDelete}
+                                disabled={deleting}
+                            >
+                                {deleting ? (
+                                    <>
+                                        <span className="spinner-sm"></span> Deleting...
+                                    </>
+                                ) : (
+                                    'Yes, Delete Rank'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

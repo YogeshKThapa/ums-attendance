@@ -511,7 +511,7 @@ const LoginForm = () => {
     if (view === 'leaderboard') {
         return (
             <Leaderboard
-                studentData={{ ...studentData, roll_no: loginId }}
+                studentData={{ ...studentData, roll_no: loginId || activeProfile?.rollNo || studentData?.roll_no || studentData?.RollNo }}
                 overallPercentage={(() => {
                     // Try current attendance data first (if we are looking at overall)
                     if (selectedMonth === '0' && attendanceData.length > 0) {
@@ -547,15 +547,20 @@ const LoginForm = () => {
                         )}
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={() => setView('leaderboard')} style={{ background: '#FFD700', color: '#000', padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
-                            🏆 Rank
+                        <button 
+                            onClick={() => setView('leaderboard')} 
+                            className="dashboard-rank-btn"
+                            title="View Student Leaderboard"
+                        >
+                            🏆 Leaderboard
                         </button>
-                        <button onClick={() => {
-                            // Logout Logic: Go back to profiles, clear current view state, but DO NOT delete cache unless requested
-                            // Actually, standard logout just exits the view.
-                            setView('profiles');
-                            setStudentData(null);
-                        }} style={{ background: '#f5f5f5', color: '#333', padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                        <button 
+                            onClick={() => {
+                                setView('profiles');
+                                setStudentData(null);
+                            }} 
+                            className="dashboard-nav-btn"
+                        >
                             Back
                         </button>
                     </div>
