@@ -110,7 +110,8 @@ const Leaderboard = ({ studentData, overallPercentage, onBack }) => {
                 body: JSON.stringify({
                     roll_no: rollNo,
                     name: studentData.student_name || studentData.StudentName,
-                    percentage: overallPercentage
+                    percentage: overallPercentage,
+                    type: 'overall'
                 })
             });
 

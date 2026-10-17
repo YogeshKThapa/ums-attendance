@@ -215,20 +215,57 @@ select option {
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23D0BCFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
 }
 
-.captcha-group .captcha-img {
-  display: block;
-  margin-bottom: 0.5rem;
-  border: 1px solid var(--input-border);
-  max-width: 100%;
+.captcha-control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.65rem;
 }
 
-.refresh-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  margin-left: 0.5rem;
+.captcha-control-row .captcha-img {
+  display: block;
+  height: 42px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-s);
+  object-fit: contain;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.refresh-captcha-btn {
+  width: 42px;
+  height: 42px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
   color: var(--text-color);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: var(--transition-standard);
+  padding: 0;
+  line-height: 1;
+}
+
+.refresh-captcha-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: rotate(90deg);
+}
+
+.refresh-captcha-btn:active {
+  transform: scale(0.92) rotate(90deg);
+}
+
+.captcha-input {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 600;
 }
 
 button[type="submit"],
@@ -1236,21 +1273,66 @@ button[type="submit"]:active,
 }
 
 
-/* --- Dashboard Action Buttons --- */
+/* --- Dashboard Header & Action Buttons --- */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-greeting {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text-color);
+  letter-spacing: -0.3px;
+}
+
+.dashboard-last-updated {
+  font-size: 11px;
+  color: var(--secondary-text);
+  margin-top: 4px;
+}
+
+.dashboard-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dashboard-rank-btn,
+.dashboard-nav-btn {
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  font-size: 0.88rem;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: var(--transition-standard);
+  white-space: nowrap;
+}
+
 .dashboard-rank-btn {
   background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
   color: #FFFFFF;
-  padding: 8px 16px;
-  font-size: 0.88rem;
-  border: none;
-  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
   font-weight: 700;
-  cursor: pointer;
   box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3);
-  transition: var(--transition-standard);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .dashboard-rank-btn:hover {
@@ -1265,13 +1347,8 @@ button[type="submit"]:active,
 .dashboard-nav-btn {
   background: var(--input-bg);
   color: var(--text-color);
-  padding: 8px 16px;
-  font-size: 0.88rem;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-pill);
   font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-standard);
 }
 
 .dashboard-nav-btn:hover {

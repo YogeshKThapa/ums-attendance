@@ -5,6 +5,7 @@ import AttendanceTable from './AttendanceTable';
 import Leaderboard from './Leaderboard';
 import WhatsNew from './WhatsNew';
 import DatePicker from './DatePicker';
+import { parseAttendanceData } from '../utils/attendanceParser';
 
 const LoginForm = () => {
     // App State
@@ -139,7 +140,14 @@ const LoginForm = () => {
         if (cachedData.attendanceData) {
             setAttendanceData(cachedData.attendanceData);
             setTableHeaders(cachedData.headers || []);
-            setOverallData(cachedData.overallData || null);
+            if (cachedData.overallData?.attendance_data) {
+                setOverallData(cachedData.overallData);
+            } else {
+                setOverallData(null);
+            }
+            if (cachedData.selectedMonth !== undefined) {
+                setSelectedMonth(String(cachedData.selectedMonth));
+            }
         }
 
         // Restore Defaults
@@ -377,40 +385,45 @@ const LoginForm = () => {
                 setAttendanceData(data.attendance_data);
                 setTableHeaders(data.headers || []);
 
+                const isOverallFetch = String(selectedMonth) === '0';
+
                 // Cache this attendance result!
                 const updatePayload = {
                     attendanceData: data.attendance_data,
-                    headers: data.headers
+                    headers: data.headers,
+                    selectedMonth: selectedMonth
                 };
 
-                if (selectedMonth === '0') {
-                    setOverallData(data); // Cache overall data for smart view
-                    updatePayload.overallData = data;
-                }
+                if (isOverallFetch) {
+                    const parsed = parseAttendanceData(data.attendance_data, data.headers || []);
+                    const percentage = parsed.overall ? String(parsed.overall.percent) : "0.00";
 
-                saveToCache(rNo, updatePayload);
+                    const verifiedOverallData = {
+                        ...data,
+                        type: 'overall_semester',
+                        calculatedPercentage: percentage
+                    };
 
-                // --- AUTOMATIC LEADERBOARD UPDATE ---
-                // Only update if we are fetching the overall semester data
-                if (selectedMonth === '0') {
-                    // Calculate percentage immediately
-                    const totalHeld = data.attendance_data.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
-                    const totalAttended = data.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
-                    const percentage = totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
+                    setOverallData(verifiedOverallData); // Cache overall data for smart view and leaderboard
+                    updatePayload.overallData = verifiedOverallData;
 
+                    // --- AUTOMATIC LEADERBOARD UPDATE ---
+                    // ONLY update if we are fetching overall semester data AND user has opted in
                     if (localStorage.getItem(`leaderboard_optin_${rNo}`) === 'true') {
-                        // Send to backend silently ONLY if opted in
                         fetch(`${API_BASE}/api/leaderboard/join`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 roll_no: rNo,
                                 name: studentData.student_name,
-                                percentage: percentage
+                                percentage: percentage,
+                                type: 'overall'
                             })
                         }).catch(err => console.error("Leaderboard update failed", err));
                     }
                 }
+
+                saveToCache(rNo, updatePayload);
             }
             if (data.html) setAttendanceHtml(data.html);
         } catch (err) {
@@ -491,9 +504,30 @@ const LoginForm = () => {
 
                         <div className="form-group captcha-group">
                             <label>Captcha</label>
-                            {captchaImage && <img src={captchaImage} alt="Captcha" className="captcha-img" />}
-                            <button type="button" onClick={fetchCaptcha} className="refresh-btn">↻</button>
-                            <input ref={captchaInputRef} type="text" value={captchaText} onChange={(e) => setCaptchaText(e.target.value)} required placeholder="Enter code" />
+                            <div className="captcha-control-row">
+                                {captchaImage && <img src={captchaImage} alt="Captcha" className="captcha-img" />}
+                                <button 
+                                    type="button" 
+                                    onClick={() => fetchCaptcha(false)} 
+                                    className="refresh-captcha-btn"
+                                    title="Refresh Captcha"
+                                    aria-label="Refresh Captcha"
+                                >
+                                    ↻
+                                </button>
+                            </div>
+                            <input 
+                                ref={captchaInputRef} 
+                                type="text" 
+                                value={captchaText} 
+                                onChange={(e) => setCaptchaText(e.target.value.toUpperCase())} 
+                                required 
+                                placeholder="Enter code" 
+                                autoCapitalize="characters"
+                                autoCorrect="off"
+                                spellCheck="false"
+                                className="captcha-input"
+                            />
                         </div>
 
                         <button type="submit" disabled={loading}>
@@ -509,25 +543,22 @@ const LoginForm = () => {
 
     // LEADERBOARD VIEW
     if (view === 'leaderboard') {
+        const calculateOverallPercentage = () => {
+            // Strictly require overallData to be present and contain attendance records
+            if (!overallData?.attendance_data || overallData.attendance_data.length === 0) {
+                return null;
+            }
+            if (overallData.calculatedPercentage !== undefined) {
+                return overallData.calculatedPercentage;
+            }
+            const stats = parseAttendanceData(overallData.attendance_data, overallData.headers || []).overall;
+            return stats ? String(stats.percent) : null;
+        };
+
         return (
             <Leaderboard
                 studentData={{ ...studentData, roll_no: loginId || activeProfile?.rollNo || studentData?.roll_no || studentData?.RollNo }}
-                overallPercentage={(() => {
-                    // Try current attendance data first (if we are looking at overall)
-                    if (selectedMonth === '0' && attendanceData.length > 0) {
-                        const totalHeld = attendanceData.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
-                        const totalAttended = attendanceData.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
-                        return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
-                    }
-                    // Fallback to cached overall data if we have it
-                    if (overallData?.attendance_data?.length > 0) {
-                        const totalHeld = overallData.attendance_data.reduce((acc, row) => acc + parseInt(row[1] || 0), 0);
-                        const totalAttended = overallData.attendance_data.reduce((acc, row) => acc + parseInt(row[2] || 0), 0);
-                        return totalHeld > 0 ? ((totalAttended / totalHeld) * 100).toFixed(2) : "0.00";
-                    }
-                    // No overall data available yet
-                    return null;
-                })()}
+                overallPercentage={calculateOverallPercentage()}
                 onBack={() => setView('dashboard')}
             />
         );
@@ -537,16 +568,16 @@ const LoginForm = () => {
     if (view === 'dashboard' && studentData) {
         return (
             <div className="login-container" style={{ maxWidth: '800px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div>
-                        <h2 style={{ margin: 0 }}>Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
+                <div className="dashboard-header">
+                    <div className="dashboard-user-info">
+                        <h2 className="dashboard-greeting">Hi, {studentData.student_name.split(' ')[0]} 👋</h2>
                         {lastUpdated && (
-                            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                            <div className="dashboard-last-updated">
                                 Data from: {new Date(lastUpdated).toLocaleTimeString()} ({Math.floor((Date.now() - lastUpdated) / 60000)}m ago)
                             </div>
                         )}
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div className="dashboard-header-actions">
                         <button 
                             onClick={() => setView('leaderboard')} 
                             className="dashboard-rank-btn"

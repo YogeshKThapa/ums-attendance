@@ -602,20 +602,32 @@ def join_leaderboard():
         if not data:
              return jsonify({"error": "Invalid JSON body"}), 400
 
-        roll_no = str(data.get('roll_no', ''))
+        roll_no = str(data.get('roll_no', '')).strip()
         name = data.get('name', 'Unknown')
         percentage = data.get('percentage')
-        
+        submission_type = data.get('type')
+
+        if submission_type and submission_type != 'overall':
+            return jsonify({"error": "Only overall semester attendance is eligible for leaderboard ranking."}), 400
+
         if not roll_no or percentage is None:
             return jsonify({"error": "Missing required data fields (roll_no, percentage)"}), 400
-            
+
+        try:
+            pct_val = float(percentage)
+            if pct_val < 0.0 or pct_val > 100.0:
+                return jsonify({"error": "Percentage must be between 0 and 100."}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid percentage format."}), 400
+
         leaderboard = load_leaderboard()
         
         # Update or add user
         leaderboard[roll_no] = {
             "roll_no": roll_no,
             "name": name,
-            "percentage": float(percentage),
+            "percentage": round(pct_val, 2),
+            "type": "overall",
             "last_updated": datetime.utcnow().isoformat()
         }
         
