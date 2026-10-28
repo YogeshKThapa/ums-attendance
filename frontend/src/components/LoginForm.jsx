@@ -154,14 +154,18 @@ const LoginForm = () => {
         if (cachedData.sessionYears?.length > 0) setSelectedSessionYear(cachedData.sessionYears[0].Value);
         if (cachedData.years?.length > 0) setSelectedYear(cachedData.years[0].Value);
 
-        // Also restore selected semester if saved, else default to first
+        // Restore selected semester if saved and present, else default to '73' or last
         if (cachedData.semesters?.length > 0) {
-            // Try to restore last used semester, or default to first
-            setSelectedSemester(cachedData.semesters[0].Value);
+            if (cachedData.selectedSemester && cachedData.semesters.some(s => String(s.Value) === String(cachedData.selectedSemester))) {
+                setSelectedSemester(cachedData.selectedSemester);
+            } else {
+                const defaultSem = cachedData.semesters.find(s => String(s.Value) === '73') || cachedData.semesters[cachedData.semesters.length - 1];
+                setSelectedSemester(defaultSem ? defaultSem.Value : cachedData.semesters[0].Value);
+            }
         }
     };
 
-    const handleProfileSelect = (profile) => {
+    const handleProfileSelect = async (profile) => {
         setActiveProfile(profile);
 
         // FAST RE-ENTRY LOGIC
@@ -179,6 +183,14 @@ const LoginForm = () => {
 
             // Directly go to dashboard
             setView('dashboard');
+
+            // Auto-heal: If cached semesters are missing or empty, attempt fetch if session is active
+            if (!cached.semesters || cached.semesters.length === 0) {
+                console.log("Cached semesters missing for profile, attempting auto-heal...");
+                if (cached.sessionId) {
+                    await fetchSemesters(cached.sessionId, profile.rollNo);
+                }
+            }
             return;
         }
 
@@ -285,17 +297,31 @@ const LoginForm = () => {
                 if (data.session_years?.length > 0) setSelectedSessionYear(data.session_years[0].Value);
                 if (data.years?.length > 0) setSelectedYear(data.years[0].Value);
 
-                // Update Cache
+                const semList = Array.isArray(data.semesters) ? data.semesters : [];
+                setSemesters(semList);
+                let chosenSem = '';
+                if (semList.length > 0) {
+                    const defaultSem = semList.find(s => String(s.Value) === '73') || semList[semList.length - 1];
+                    chosenSem = defaultSem ? defaultSem.Value : semList[0].Value;
+                    setSelectedSemester(chosenSem);
+                }
+
+                // Update Cache atomically with semesters and selectedSemester
                 saveToCache(loginId, {
                     sessionId: sessionId,
                     studentData: data.student_data,
                     sessionYears: data.session_years,
                     years: data.years,
+                    semesters: semList,
+                    selectedSemester: chosenSem,
                     roll_no: loginId, // Redundant but safe
                     dob: password
                 });
 
-                fetchSemesters(sessionId, loginId); // Pass loginId to save semesters to cache
+                if (semList.length === 0) {
+                    // Fallback to fetchSemesters if login response didn't pre-extract them
+                    await fetchSemesters(sessionId, loginId);
+                }
                 setView('dashboard');
             } else {
                 setError(data.message || 'Login failed');
@@ -310,23 +336,19 @@ const LoginForm = () => {
     };
 
     const fetchSemesters = async (sid, rNo) => {
+        if (!sid) return;
         try {
             const res = await fetch(`${API_BASE}/api/semesters?session_id=${sid}`);
             const data = await res.json();
-            if (Array.isArray(data)) {
+            if (Array.isArray(data) && data.length > 0) {
                 setSemesters(data);
-                // Update Cache with semesters
-                saveToCache(rNo, { semesters: data });
+                let chosenSem = '';
+                const defaultSem = data.find(s => String(s.Value) === '73') || data[data.length - 1];
+                chosenSem = defaultSem ? defaultSem.Value : data[0].Value;
+                setSelectedSemester(chosenSem);
 
-                // Auto-select the semester with Value '73' (requested hardcoded default), else last one
-                if (data.length > 0) {
-                    const defaultSem = data.find(s => s.Value == '73');
-                    if (defaultSem) {
-                        setSelectedSemester('73');
-                    } else {
-                        setSelectedSemester(data[data.length - 1].Value);
-                    }
-                }
+                // Update Cache with semesters and selectedSemester
+                saveToCache(rNo, { semesters: data, selectedSemester: chosenSem });
             }
         } catch (err) {
             console.error("Failed to fetch semesters", err);
@@ -334,9 +356,19 @@ const LoginForm = () => {
     };
 
     const handleGetAttendance = async () => {
-        if (!selectedSemester) {
-            alert("Please select a semester");
-            return;
+        let activeSem = selectedSemester;
+        if (!activeSem) {
+            if (semesters.length > 0) {
+                const defaultSem = semesters.find(s => String(s.Value) === '73') || semesters[semesters.length - 1];
+                activeSem = defaultSem ? defaultSem.Value : semesters[0].Value;
+                setSelectedSemester(activeSem);
+            } else {
+                if (window.confirm("Semester information is missing for this profile. Would you like to log in to sync your account details?")) {
+                    setView('login');
+                    fetchCaptcha();
+                }
+                return;
+            }
         }
         setLoading(true);
 
@@ -354,7 +386,7 @@ const LoginForm = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     session_id: sessionId, // This might be expired on server, need to handle that
-                    semester_id: selectedSemester,
+                    semester_id: activeSem,
                     roll_no: rNo,
                     dob: dOb,
                     month_id: selectedMonth,
@@ -391,7 +423,8 @@ const LoginForm = () => {
                 const updatePayload = {
                     attendanceData: data.attendance_data,
                     headers: data.headers,
-                    selectedMonth: selectedMonth
+                    selectedMonth: selectedMonth,
+                    selectedSemester: activeSem
                 };
 
                 if (isOverallFetch) {
@@ -606,8 +639,13 @@ const LoginForm = () => {
                         <option value="">-- Year --</option>
                         {years.map(opt => <option key={opt.Value} value={opt.Value}>{opt.Text}</option>)}
                     </select>
-                    <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
-                        <option value="">-- Semester --</option>
+                    <select value={selectedSemester} onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedSemester(val);
+                        const rNo = loginId || studentData?.rollNo;
+                        if (rNo) saveToCache(rNo, { selectedSemester: val });
+                    }}>
+                        <option value="">{semesters.length === 0 ? '-- No Semesters --' : '-- Semester --'}</option>
                         {semesters.map(sem => <option key={sem.Value} value={sem.Value}>{sem.Text}</option>)}
                     </select>
                     <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
@@ -620,6 +658,42 @@ const LoginForm = () => {
                         {loading ? '...' : 'Go'}
                     </button>
                 </div>
+
+                {semesters.length === 0 && !loading && (
+                    <div style={{
+                        margin: '10px 0 16px',
+                        padding: '10px 14px',
+                        background: 'rgba(255, 193, 7, 0.12)',
+                        border: '1px solid rgba(255, 193, 7, 0.35)',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                    }}>
+                        <span>⚠️ Semester options are missing for this profile snapshot.</span>
+                        <button
+                            onClick={() => {
+                                setView('login');
+                                fetchCaptcha();
+                            }}
+                            style={{
+                                background: 'var(--primary, #007bff)',
+                                color: '#fff',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: '600'
+                            }}
+                        >
+                            Log in to Refresh
+                        </button>
+                    </div>
+                )}
 
                 {loading ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', color: '#666' }}>

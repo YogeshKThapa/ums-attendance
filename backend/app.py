@@ -80,6 +80,7 @@ class SessionStore:
                     # Reconstruct custom properties
                     session.student_data = data.get("student_data", {})
                     session.hidden_fields = data.get("hidden_fields", {})
+                    session.semesters = data.get("semesters", [])
                     return session
             except Exception as e:
                 logger.error(f"Redis get session error: {e}")
@@ -96,10 +97,12 @@ class SessionStore:
                 cookie_dict = requests.utils.dict_from_cookiejar(session.cookies)
                 student_data = getattr(session, 'student_data', {})
                 hidden_fields = getattr(session, 'hidden_fields', {})
+                semesters = getattr(session, 'semesters', [])
                 data = {
                     "cookies": cookie_dict,
                     "student_data": student_data,
-                    "hidden_fields": hidden_fields
+                    "hidden_fields": hidden_fields,
+                    "semesters": semesters
                 }
                 # Store in Redis with 2 hours TTL (7200 seconds)
                 self.redis_client.set(f"session:{session_id}", json.dumps(data), ex=7200)
@@ -214,6 +217,62 @@ def normalize_dob(dob_str):
         return f"{parts[2]}/{parts[1]}/{parts[0]}"
     return cleaned
 
+def extract_or_fetch_semesters(session, soup, html_text, hidden_fields):
+    """
+    Extracts semesters from HTML directly or fetches them from the college API.
+    Returns a list of dicts: [{"Value": ..., "Text": ...}, ...]
+    """
+    semesters = []
+    
+    # 1. Check if the semester dropdown is pre-populated in the HTML
+    sem_select = soup.find(lambda el: el.name == 'select' and (
+        el.get('id') in ['CourseBranchDurationId', 'hdnCourseBranchDurationId', 'Semester', 'ddlSemester'] or
+        el.get('name') in ['CourseBranchDurationId', 'hdnCourseBranchDurationId', 'Semester', 'ddlSemester']
+    ))
+    if sem_select:
+        for opt in sem_select.find_all('option'):
+            val = opt.get('value', '').strip()
+            text = opt.text.strip()
+            if val and val not in ['0', '--Select--', '']:
+                semesters.append({"Value": str(val), "Text": text})
+                
+    if semesters:
+        logger.info(f"Extracted {len(semesters)} semesters directly from HTML page.")
+        return semesters
+
+    # 2. If not found in HTML, try fetching via GetCourseBranchDurationForAttendance
+    branch_id = hidden_fields.get('hdnBranchId') or hidden_fields.get('BranchId')
+    if not branch_id:
+        branch_match = re.search(r'(?:BranchId|hdnBranchId|branch_id)[\s"\'=:]+([0-9]+)', html_text, re.IGNORECASE)
+        if branch_match:
+            branch_id = branch_match.group(1)
+
+    if branch_id:
+        try:
+            url = f"{BASE_URL}/ums/Admission/Master/GetCourseBranchDurationForAttendance"
+            ajax_headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': LOGIN_URL,
+                'Origin': BASE_URL,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json, text/javascript, */*; q=0.01'
+            }
+            logger.info(f"Fetching semesters for BranchId {branch_id}...")
+            resp = session.get(url, params={'BranchId': branch_id}, headers=ajax_headers, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, list):
+                    for item in data:
+                        v = item.get('Value') if item.get('Value') is not None else item.get('value')
+                        t = item.get('Text') if item.get('Text') is not None else item.get('text')
+                        if v:
+                            semesters.append({"Value": str(v), "Text": str(t).strip()})
+                    logger.info(f"Successfully fetched {len(semesters)} semesters via API.")
+        except Exception as e:
+            logger.error(f"Error fetching semesters via API for BranchId {branch_id}: {e}")
+
+    return semesters
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -265,13 +324,27 @@ def login():
         student_name = lbl_student.text.strip() if lbl_student else ""
         
         hidden_fields = {}
-        for hid in ['hdnCollegeId', 'hdnBranchId', 'hdnCourseId', 'hdnStudentAdmissionId']:
-            tag = soup.find('input', id=hid) or soup.find('input', attrs={'name': hid})
+        for hid in ['hdnCollegeId', 'hdnBranchId', 'hdnCourseId', 'hdnStudentAdmissionId', 'hdnCourseBranchDurationId']:
+            tag = soup.find(lambda el: el.name in ['input', 'select'] and (el.get('id') == hid or el.get('name') == hid))
             if not tag:
                 unprefixed = hid.replace('hdn', '')
-                tag = soup.find('input', id=unprefixed) or soup.find('input', attrs={'name': unprefixed})
-            if tag and tag.get('value'):
-                hidden_fields[hid] = tag.get('value')
+                tag = soup.find(lambda el: el.name in ['input', 'select'] and (el.get('id') == unprefixed or el.get('name') == unprefixed))
+            if tag:
+                val = tag.get('value')
+                if not val and tag.name == 'select':
+                    selected_opt = tag.find('option', selected=True) or tag.find('option')
+                    if selected_opt and selected_opt.get('value'):
+                        val = selected_opt.get('value')
+                if val:
+                    hidden_fields[hid] = str(val).strip()
+
+        # Regex fallback for critical IDs in case page structure differs across branches/programs
+        for field_name in ['CollegeId', 'BranchId', 'CourseId', 'StudentAdmissionId', 'CourseBranchDurationId']:
+            key = f"hdn{field_name}"
+            if not hidden_fields.get(key):
+                m = re.search(rf'(?:{key}|{field_name})[\s"\'=:]+([0-9]+)', post_resp.text, re.IGNORECASE)
+                if m:
+                    hidden_fields[key] = m.group(1)
         
         # Also extract post-login __RequestVerificationToken and Token for attendance requests
         token_tag = soup.find('input', {'name': '__RequestVerificationToken'})
@@ -311,9 +384,13 @@ def login():
         if y_select:
             years = [{"Value": opt['value'], "Text": opt.text.strip()} for opt in y_select.find_all('option') if opt.get('value')]
 
+        # Extract or fetch semesters atomically
+        semesters = extract_or_fetch_semesters(session, soup, post_resp.text, hidden_fields)
+
         # Store these in the session for later use
         session.student_data = student_data
         session.hidden_fields = hidden_fields
+        session.semesters = semesters
         
         # Save session to store (persisting credentials and cookies)
         session_store.save(session_id, session)
@@ -328,7 +405,8 @@ def login():
             "student_data": student_data,
             "hidden_fields": hidden_fields,
             "session_years": session_years,
-            "years": years
+            "years": years,
+            "semesters": semesters
         })
 
     except Exception as e:
@@ -338,34 +416,73 @@ def login():
 @app.route('/api/semesters', methods=['GET'])
 def get_semesters():
     session_id = request.args.get('session_id')
+    branch_id_param = request.args.get('branch_id')
     session = session_store.get(session_id)
-    if not session:
-        return jsonify({"error": "Invalid or expired session"}), 400
+    
+    # 1. Return pre-cached semesters on session if already available
+    if session and getattr(session, 'semesters', None) and len(session.semesters) > 0:
+        return jsonify(session.semesters)
 
-    hidden_fields = getattr(session, 'hidden_fields', {})
-    branch_id = hidden_fields.get('hdnBranchId')
+    hidden_fields = getattr(session, 'hidden_fields', {}) if session else {}
+    branch_id = branch_id_param or hidden_fields.get('hdnBranchId') or hidden_fields.get('BranchId')
     
     if not branch_id:
         return jsonify({"error": "Branch ID not found. Please login again."}), 400
         
     try:
         url = f"{BASE_URL}/ums/Admission/Master/GetCourseBranchDurationForAttendance"
-        resp = session.get(url, params={'BranchId': branch_id})
+        ajax_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': LOGIN_URL,
+            'Origin': BASE_URL,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json, text/javascript, */*; q=0.01'
+        }
+        req_session = session if session else requests.Session()
+        resp = req_session.get(url, params={'BranchId': branch_id}, headers=ajax_headers, timeout=10)
         resp.raise_for_status()
-        return jsonify(resp.json())
+        raw_data = resp.json()
+        semesters = []
+        if isinstance(raw_data, list):
+            for item in raw_data:
+                v = item.get('Value') if item.get('Value') is not None else item.get('value')
+                t = item.get('Text') if item.get('Text') is not None else item.get('text')
+                if v:
+                    semesters.append({"Value": str(v), "Text": str(t).strip()})
+        if session:
+            session.semesters = semesters
+            session_store.save(session_id, session)
+        return jsonify(semesters)
     except Exception as e:
         logger.error(f"Semester fetch error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/attendance', methods=['POST'])
 def get_attendance():
-    data = request.json
+    data = request.json or {}
     session_id = data.get('session_id')
     
+    # Required/optional params from frontend
+    session_year = data.get('session_year', '2025') # Default to current
+    semester_id = data.get('semester_id')
+    year = data.get('year', '2026')
+    month_id = data.get('month_id')
+    roll_no = str(data.get('roll_no', '')).strip()
+    dob = normalize_dob(data.get('dob', ''))
+    bypass_cache = data.get('bypass_cache', False)
+    
+    logger.info(f"Attendance Request Data: session_year={session_year}, semester_id={semester_id}, year={year}, month_id={month_id}, roll_no={roll_no}")
+
+    # Check cache first if not bypass_cache and roll_no / semester_id provided
+    if not bypass_cache and roll_no and semester_id:
+        cached_result = get_cached_attendance(roll_no, semester_id, session_year, year, month_id)
+        if cached_result is not None:
+            return jsonify(cached_result)
+
     session = session_store.get(session_id)
     if not session:
         logger.error(f"Session {session_id} NOT FOUND in session store!")
-        return jsonify({"error": "Invalid or expired session"}), 400
+        return jsonify({"error": "Invalid or expired session. Please re-login."}), 400
 
     hidden_fields = getattr(session, 'hidden_fields', {})
     
